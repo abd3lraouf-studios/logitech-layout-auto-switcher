@@ -3,7 +3,7 @@
 ## Reporting a vulnerability
 
 Please report security issues privately through
-[GitHub Security Advisories](https://github.com/App-Builders-Gang/logitech-layout-auto-switcher/security/advisories/new)
+[GitHub Security Advisories](https://github.com/abd3lraouf-studios/logitech-layout-auto-switcher/security/advisories/new)
 rather than opening a public issue. Expect an initial response within a week.
 
 ## What this software actually does

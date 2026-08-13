@@ -341,7 +341,7 @@ def cannot_open_hint(agent_running: bool = False) -> str | None:
             "the receiver is present but will not open, because the logiswitch agent "
             "already has it -- only one process can. That is normal. For a full device "
             "dump, stop the agent first, then re-run:\n"
-            "    macOS:   launchctl bootout gui/$(id -u)/com.appbuildersgang.logiswitch\n"
+            "    macOS:   launchctl bootout gui/$(id -u)/com.abd3lraouf.logiswitch\n"
             "    Windows: schtasks /End /TN LogiSwitch\n"
             "  ...and start it again afterwards with `logiswitch install`."
         )

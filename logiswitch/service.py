@@ -22,6 +22,7 @@ from pathlib import Path
 
 from .platform import (
     APP_NAME,
+    LEGACY_SERVICE_LABELS,
     LEGACY_TASK_NAME,
     MANAGED_ENV_VAR,
     SERVICE_LABEL,
@@ -304,6 +305,9 @@ def _macos_install(
 
     domain = _launchctl_domain()
     target = f"{domain}/{SERVICE_LABEL}"
+    # An install that follows a label rename would otherwise leave the old agent
+    # running next to the new one, both driving the same keyboard.
+    _remove_legacy_agents(domain)
     # A label that was ever `launchctl disable`d keeps a sticky override that fails
     # bootstrap with the same EIO; enabling is idempotent and harmless otherwise.
     _run(["launchctl", "enable", target], check=False)
@@ -315,6 +319,18 @@ def _macos_install(
     return f"launch agent '{SERVICE_LABEL}'"
 
 
+def _remove_legacy_agents(domain: str) -> list[str]:
+    """Boot out and delete any LaunchAgent we registered under an older label."""
+    removed = []
+    for label in LEGACY_SERVICE_LABELS:
+        legacy = Path.home() / "Library" / "LaunchAgents" / f"{label}.plist"
+        if legacy.exists():
+            _run(["launchctl", "bootout", f"{domain}/{label}"], check=False)
+            legacy.unlink()
+            removed.append(label)
+    return removed
+
+
 def _macos_uninstall() -> list[str]:
     removed = []
     domain = _launchctl_domain()
@@ -323,11 +339,7 @@ def _macos_uninstall() -> list[str]:
         _run(["launchctl", "bootout", f"{domain}/{SERVICE_LABEL}"], check=False)
         path.unlink()
         removed.append(SERVICE_LABEL)
-    legacy = Path.home() / "Library" / "LaunchAgents" / "com.abd3lraouf.mxswitch.plist"
-    if legacy.exists():
-        _run(["launchctl", "bootout", f"{domain}/com.abd3lraouf.mxswitch"], check=False)
-        legacy.unlink()
-        removed.append("com.abd3lraouf.mxswitch")
+    removed.extend(_remove_legacy_agents(domain))
     return removed
 
 

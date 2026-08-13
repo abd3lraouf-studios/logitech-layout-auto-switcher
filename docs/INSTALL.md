@@ -12,7 +12,7 @@ needed anywhere).
 ## Windows
 
 ```powershell
-irm https://raw.githubusercontent.com/App-Builders-Gang/logitech-layout-auto-switcher/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/abd3lraouf-studios/logitech-layout-auto-switcher/main/install.ps1 | iex
 ```
 
 The installer detects your Python (skipping the Microsoft Store stub), downloads
@@ -24,7 +24,7 @@ earlier version.
 From a clone instead:
 
 ```powershell
-git clone https://github.com/App-Builders-Gang/logitech-layout-auto-switcher.git
+git clone https://github.com/abd3lraouf-studios/logitech-layout-auto-switcher.git
 cd logitech-layout-auto-switcher
 .\install.ps1
 ```
@@ -45,7 +45,7 @@ Get-Content "$env:LOCALAPPDATA\LogiSwitch\logiswitch.log" -Tail 20
 Uninstall: `.\install.ps1 -Uninstall`, or without a clone:
 
 ```powershell
-$env:LOGISWITCH_UNINSTALL='1'; irm https://raw.githubusercontent.com/App-Builders-Gang/logitech-layout-auto-switcher/main/install.ps1 | iex
+$env:LOGISWITCH_UNINSTALL='1'; irm https://raw.githubusercontent.com/abd3lraouf-studios/logitech-layout-auto-switcher/main/install.ps1 | iex
 ```
 
 ---
@@ -53,7 +53,7 @@ $env:LOGISWITCH_UNINSTALL='1'; irm https://raw.githubusercontent.com/App-Builder
 ## macOS
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/App-Builders-Gang/logitech-layout-auto-switcher/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/abd3lraouf-studios/logitech-layout-auto-switcher/main/install.sh | bash
 ```
 
 Pipe to `bash`, not `sh` — the script uses bash features and a shebang is ignored
@@ -62,12 +62,12 @@ when a script is piped.
 From a clone instead:
 
 ```bash
-git clone https://github.com/App-Builders-Gang/logitech-layout-auto-switcher.git
+git clone https://github.com/abd3lraouf-studios/logitech-layout-auto-switcher.git
 cd logitech-layout-auto-switcher
 chmod +x install.sh && ./install.sh
 ```
 
-Either way it registers a launchd LaunchAgent (`com.appbuildersgang.logiswitch`) in your own
+Either way it registers a launchd LaunchAgent (`com.abd3lraouf.logiswitch`) in your own
 `~/Library/LaunchAgents`, with `RunAtLoad` and `KeepAlive`.
 
 Verify:
@@ -80,7 +80,7 @@ tail -20 ~/Library/Logs/logiswitch.log
 Uninstall: `./install.sh --uninstall`, or without a clone:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/App-Builders-Gang/logitech-layout-auto-switcher/main/install.sh | bash -s -- --uninstall
+curl -fsSL https://raw.githubusercontent.com/abd3lraouf-studios/logitech-layout-auto-switcher/main/install.sh | bash -s -- --uninstall
 ```
 
 ### If macOS blocks HID access
@@ -134,7 +134,7 @@ logiswitch update --check  # report whether an update is available, change nothi
 ```
 
 The command pulls the wheel from the project's
-[latest GitHub release](https://github.com/App-Builders-Gang/logitech-layout-auto-switcher/releases/latest)
+[latest GitHub release](https://github.com/abd3lraouf-studios/logitech-layout-auto-switcher/releases/latest)
 over HTTPS, using only the Python standard library. It stops the running agent
 before writing the new files (a running process holds its package directory on
 Windows), installs the wheel into the same virtualenv with pip, and restarts the
@@ -172,4 +172,4 @@ logiswitch watch -v         # debug logging
 |---|---|---|
 | Log | `%LOCALAPPDATA%\LogiSwitch\logiswitch.log` | `~/Library/Logs/logiswitch.log` |
 | State | `%LOCALAPPDATA%\LogiSwitch\state.json` | `~/Library/Application Support/logiswitch/state.json` |
-| Service | Scheduled Task `LogiSwitch` | `~/Library/LaunchAgents/com.appbuildersgang.logiswitch.plist` |
+| Service | Scheduled Task `LogiSwitch` | `~/Library/LaunchAgents/com.abd3lraouf.logiswitch.plist` |

@@ -8,9 +8,9 @@ Automatically switches a Logitech keyboard between **Mac and Windows layouts** t
 instant a KVM, Easy-Switch channel or cable hands it to another machine — so you
 never hold **Fn+O / Fn+P** for seven seconds again.
 
-[![CI](https://github.com/App-Builders-Gang/logitech-layout-auto-switcher/actions/workflows/ci.yml/badge.svg)](https://github.com/App-Builders-Gang/logitech-layout-auto-switcher/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/App-Builders-Gang/logitech-layout-auto-switcher/actions/workflows/codeql.yml/badge.svg)](https://github.com/App-Builders-Gang/logitech-layout-auto-switcher/actions/workflows/codeql.yml)
-[![Release](https://img.shields.io/github/v/release/App-Builders-Gang/logitech-layout-auto-switcher?color=0969da)](https://github.com/App-Builders-Gang/logitech-layout-auto-switcher/releases/latest)
+[![CI](https://github.com/abd3lraouf-studios/logitech-layout-auto-switcher/actions/workflows/ci.yml/badge.svg)](https://github.com/abd3lraouf-studios/logitech-layout-auto-switcher/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/abd3lraouf-studios/logitech-layout-auto-switcher/actions/workflows/codeql.yml/badge.svg)](https://github.com/abd3lraouf-studios/logitech-layout-auto-switcher/actions/workflows/codeql.yml)
+[![Release](https://img.shields.io/github/v/release/abd3lraouf-studios/logitech-layout-auto-switcher?color=0969da)](https://github.com/abd3lraouf-studios/logitech-layout-auto-switcher/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/downloads/)
 [![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-lightgrey.svg)](docs/INSTALL.md)
@@ -115,13 +115,13 @@ never fight. No administrator rights, nothing to clone, nothing to configure.
 **Windows** (PowerShell)
 
 ```powershell
-irm https://raw.githubusercontent.com/App-Builders-Gang/logitech-layout-auto-switcher/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/abd3lraouf-studios/logitech-layout-auto-switcher/main/install.ps1 | iex
 ```
 
 **macOS / Linux**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/App-Builders-Gang/logitech-layout-auto-switcher/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/abd3lraouf-studios/logitech-layout-auto-switcher/main/install.sh | bash
 ```
 
 <img alt="A terminal transcript: the one-line install script puts the agent in place, it finds an MX Keys S on a Logi Bolt receiver and reports it already on macOS; logiswitch doctor then prints the host, the sharing state including turn-taking suspended while Logi Options+ is running, the device and its 0x4531 capability, and finishes with nothing wrong." src="assets/terminal.svg" width="900">
@@ -137,7 +137,7 @@ service — a Scheduled Task on Windows, a launchd LaunchAgent on macOS.
 <summary>From a clone, or with options</summary>
 
 ```bash
-git clone https://github.com/App-Builders-Gang/logitech-layout-auto-switcher.git
+git clone https://github.com/abd3lraouf-studios/logitech-layout-auto-switcher.git
 cd logitech-layout-auto-switcher
 ./install.sh            # macOS / Linux
 .\install.ps1           # Windows
@@ -186,7 +186,7 @@ logiswitch update          # stop, fetch the latest release wheel, install, rest
 logiswitch update --check  # just report whether an update is available
 ```
 
-`update` pulls the wheel from this repository's [latest release](https://github.com/App-Builders-Gang/logitech-layout-auto-switcher/releases/latest)
+`update` pulls the wheel from this repository's [latest release](https://github.com/abd3lraouf-studios/logitech-layout-auto-switcher/releases/latest)
 using only the Python standard library — no PyPI account, no extra dependency. It
 stops the running agent first (Windows locks files a running process holds),
 installs, and restarts it; if the install fails the old build is restarted so the

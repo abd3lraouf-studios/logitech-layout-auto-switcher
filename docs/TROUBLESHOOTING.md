@@ -96,7 +96,7 @@ error.
 ## macOS: the LaunchAgent will not stay loaded
 
 ```bash
-launchctl print gui/$(id -u)/com.appbuildersgang.logiswitch
+launchctl print gui/$(id -u)/com.abd3lraouf.logiswitch
 tail -40 ~/Library/Logs/logiswitch.log
 tail -40 ~/Library/Logs/logiswitch.launchd.log   # crashes before logging starts
 ```
@@ -113,8 +113,8 @@ one. The installer now waits for the teardown and retries, so re-running
 `./install.sh` is the fix. If it persists, clear the label by hand and try again:
 
 ```bash
-launchctl bootout gui/$(id -u)/com.appbuildersgang.logiswitch
-launchctl enable gui/$(id -u)/com.appbuildersgang.logiswitch
+launchctl bootout gui/$(id -u)/com.abd3lraouf.logiswitch
+launchctl enable gui/$(id -u)/com.abd3lraouf.logiswitch
 ```
 
 Ignore launchctl's own "Try re-running the command as root" hint — this is a
@@ -176,7 +176,7 @@ the agent was not installed with notifications off:
 
 ```bash
 # macOS: look for --no-notify in the arguments
-plutil -p ~/Library/LaunchAgents/com.appbuildersgang.logiswitch.plist | grep -A6 ProgramArguments
+plutil -p ~/Library/LaunchAgents/com.abd3lraouf.logiswitch.plist | grep -A6 ProgramArguments
 ```
 
 Re-run `logiswitch install` to turn them back on.
@@ -254,7 +254,7 @@ For a full device dump, stop the agent first — only one process can hold the
 receiver, and normally that is the agent:
 
 ```bash
-launchctl bootout gui/$(id -u)/com.appbuildersgang.logiswitch   # macOS
+launchctl bootout gui/$(id -u)/com.abd3lraouf.logiswitch   # macOS
 schtasks /End /TN LogiSwitch                                    # Windows
 logiswitch bundle
 logiswitch install    # start it again

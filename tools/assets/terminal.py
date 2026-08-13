@@ -22,11 +22,11 @@ TERM_LINES: tuple[tuple[float, str, int, str], ...] = (
         0.0,
         "prompt",
         0,
-        "curl -fsSL https://raw.githubusercontent.com/App-Builders-Gang/"
+        "curl -fsSL https://raw.githubusercontent.com/abd3lraouf-studios/"
         "logitech-layout-auto-switcher/main/install.sh | bash",
     ),
     (0.9, "out", 0, "installed logiswitch 2.3.0"),
-    (1.3, "good", 0, "agent running: com.appbuildersgang.logiswitch"),
+    (1.3, "good", 0, "agent running: com.abd3lraouf.logiswitch"),
     (1.9, "out", 0, "watching for device changes via iokit"),
     (2.3, "good", 0, "found MX Keys S on Logi Bolt receiver at index 5 via MULTIPLATFORM 0x4531"),
     (2.7, "good", 0, "MX Keys S already on macos"),
