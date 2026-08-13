@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="assets/icon.png" alt="" width="112" height="112">
+
 # Logitech Layout Auto Switcher
 
 **Your MX Keys should know which computer it is plugged into. Now it does.**
@@ -14,6 +16,8 @@ never hold **Fn+O / Fn+P** for seven seconds again.
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/downloads/)
 [![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-lightgrey.svg)](docs/INSTALL.md)
+
+[**Product page → abd3lraouf.dev/work/layout-auto-switcher**](https://abd3lraouf.dev/work/layout-auto-switcher/)
 
 <img alt="An MX Keys keyboard with the two keys left of the spacebar ringed: each carries two legends, opt and start on one, cmd and alt on the other. On macOS the Command and Option legends are live and the keyboard reports platform 1; on Windows the Alt and Start legends are live and it reports platform 0. Either way the switch is corrected in about one second." src="assets/hero.svg" width="900">
 
