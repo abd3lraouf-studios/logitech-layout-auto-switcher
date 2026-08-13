@@ -4,7 +4,7 @@
 
 .DESCRIPTION
     One-liner (nothing cloned):
-        irm https://raw.githubusercontent.com/App-Builders-Gang/logitech-layout-auto-switcher/main/install.ps1 | iex
+        irm https://raw.githubusercontent.com/abd3lraouf-studios/logitech-layout-auto-switcher/main/install.ps1 | iex
 
     From a checkout:
         .\install.ps1
@@ -33,7 +33,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$Repo = 'App-Builders-Gang/logitech-layout-auto-switcher'
+$Repo = 'abd3lraouf-studios/logitech-layout-auto-switcher'
 
 $ValidTargets = @('windows', 'macos', 'linux', 'android', 'ios', 'chrome',
                   'win', 'mac', 'pc', 'osx', 'darwin', 'chromeos')

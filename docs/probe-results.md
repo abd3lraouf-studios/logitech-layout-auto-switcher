@@ -5,7 +5,7 @@ Raw `logiswitch probe` results from real devices. These are what
 matching `FakeDevice` extends test coverage to that hardware.
 
 To contribute one, run `logiswitch probe` and open a
-[device report](https://github.com/App-Builders-Gang/logitech-layout-auto-switcher/issues/new?template=device-report.yml).
+[device report](https://github.com/abd3lraouf-studios/logitech-layout-auto-switcher/issues/new?template=device-report.yml).
 
 ---
 

@@ -2,7 +2,7 @@
 # Logitech Layout Auto Switcher installer for macOS and Linux.
 #
 # One-liner (nothing cloned):
-#   curl -fsSL https://raw.githubusercontent.com/App-Builders-Gang/logitech-layout-auto-switcher/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/abd3lraouf-studios/logitech-layout-auto-switcher/main/install.sh | bash
 #
 # From a checkout:
 #   ./install.sh
@@ -18,7 +18,7 @@
 
 set -euo pipefail
 
-REPO="App-Builders-Gang/logitech-layout-auto-switcher"
+REPO="abd3lraouf-studios/logitech-layout-auto-switcher"
 REF="${LOGISWITCH_REF:-main}"
 TARGET_OS="${LOGISWITCH_OS:-}"
 INSTALL_DIR="${LOGISWITCH_HOME:-$HOME/.local/share/logiswitch}"
@@ -85,7 +85,7 @@ if [[ $UNINSTALL -eq 1 ]]; then
     if [[ -x "$PY" ]]; then
         "$PY" -m logiswitch uninstall || true
     else
-        for label in com.appbuildersgang.logiswitch com.abd3lraouf.mxswitch; do
+        for label in com.abd3lraouf.logiswitch com.appbuildersgang.logiswitch com.abd3lraouf.mxswitch; do
             plist="$HOME/Library/LaunchAgents/$label.plist"
             if [[ -f "$plist" ]]; then
                 launchctl bootout "gui/$(id -u)/$label" 2>/dev/null || true

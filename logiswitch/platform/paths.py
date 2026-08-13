@@ -11,9 +11,12 @@ import sys
 from pathlib import Path
 
 APP_NAME = "logiswitch"
-SERVICE_LABEL = "com.appbuildersgang.logiswitch"
+SERVICE_LABEL = "com.abd3lraouf.logiswitch"
 #: v1 registered itself under this name; installers remove it on upgrade.
 LEGACY_TASK_NAME = "MXSwitch"
+#: LaunchAgent labels used before the current one. Install and uninstall boot these
+#: out so a renamed label never leaves an old agent running alongside the new one.
+LEGACY_SERVICE_LABELS = ("com.appbuildersgang.logiswitch", "com.abd3lraouf.mxswitch")
 #: Set in the LaunchAgent plist. Tells the agent its stderr is already being captured,
 #: so it should not also echo to the console.
 MANAGED_ENV_VAR = "LOGISWITCH_MANAGED"

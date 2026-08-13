@@ -12,7 +12,7 @@ Bluetooth, or USB cable).
 ## Development setup
 
 ```bash
-git clone https://github.com/App-Builders-Gang/logitech-layout-auto-switcher.git
+git clone https://github.com/abd3lraouf-studios/logitech-layout-auto-switcher.git
 cd logitech-layout-auto-switcher
 python -m venv .venv
 .venv/bin/pip install -e ".[dev]"      # .venv\Scripts\pip on Windows

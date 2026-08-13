@@ -34,7 +34,7 @@ from . import __version__, service
 
 log = logging.getLogger(__name__)
 
-REPO = "App-Builders-Gang/logitech-layout-auto-switcher"
+REPO = "abd3lraouf-studios/logitech-layout-auto-switcher"
 #: Normalised package name, as PEP 503 spells it in wheel filenames.
 PACKAGE = "logitech_layout_auto_switcher"
 API_LATEST = f"https://api.github.com/repos/{REPO}/releases/latest"

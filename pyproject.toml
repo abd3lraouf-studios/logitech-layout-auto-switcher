@@ -41,9 +41,9 @@ dev = [
 logiswitch = "logiswitch.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/App-Builders-Gang/logitech-layout-auto-switcher"
-Issues = "https://github.com/App-Builders-Gang/logitech-layout-auto-switcher/issues"
-Documentation = "https://github.com/App-Builders-Gang/logitech-layout-auto-switcher#readme"
+Homepage = "https://github.com/abd3lraouf-studios/logitech-layout-auto-switcher"
+Issues = "https://github.com/abd3lraouf-studios/logitech-layout-auto-switcher/issues"
+Documentation = "https://github.com/abd3lraouf-studios/logitech-layout-auto-switcher#readme"
 
 [tool.setuptools.packages.find]
 include = ["logiswitch*"]
