@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "product": {
     "slug": "layout-auto-switcher",
     "name": "Layout Auto Switcher",
@@ -28,6 +28,142 @@
     "short": "Layout Auto Switcher switches between Mac and Windows keyboard layouts the instant a KVM hands the keyboard over. MIT licensed.",
     "long": "Sharing one keyboard between a Mac and a PC through a KVM means the modifier layout is wrong half the time. Layout Auto Switcher detects the handover and switches the layout to match the machine that now has focus, with no keystroke and no delay. MIT licensed and open source.",
     "naming": "Written \"Layout Auto Switcher\" in body copy. The full name, \"Logitech Layout Auto Switcher\", is used on first mention only. Logitech is a third-party trademark and the project is unaffiliated."
+  },
+  "theme": {
+    "accent": "216 24% 42%"
+  },
+  "marketing": {
+    "sections": [
+      {
+        "kind": "steps",
+        "heading": "What happens on a handover",
+        "intro": "A KVM hands the keyboard over without anything unplugging, which is exactly why the usual tools miss it.",
+        "steps": [
+          {
+            "title": "The KVM moves the receiver",
+            "body": "The Bolt receiver now belongs to the PC. No device unplugs, so no ordinary change event exists, and the keyboard stays in macOS mode: Command acts as Alt."
+          },
+          {
+            "title": "logiswitch sees the device arrive",
+            "body": "It fires on arrival, the event Logi Options+ ignores, because Options+ only corrects the layout once, when its agent starts."
+          },
+          {
+            "title": "One HID++ write, 326 ms",
+            "body": "setHostPlatform goes back along the same wire to the keyboard itself, so the keycaps' legends match the machine that now has focus."
+          }
+        ]
+      },
+      {
+        "kind": "stats",
+        "items": [
+          {
+            "value": "326 ms",
+            "label": "for a platform switch, measured"
+          },
+          {
+            "value": "1.1 s",
+            "label": "to correct an Easy-Switch return (MX Keys S, Bolt receiver)"
+          },
+          {
+            "value": "~45 ms",
+            "label": "of CPU per 60 s at idle, measured"
+          }
+        ]
+      },
+      {
+        "kind": "showcase",
+        "asset": "logiswitch-hero.svg",
+        "caption": "One keyboard, two computers, one switcher."
+      },
+      {
+        "kind": "showcase",
+        "asset": "logiswitch-kvm.svg",
+        "caption": "The handover: no unplug, no change event, so the switcher listens for arrival instead."
+      },
+      {
+        "kind": "showcase",
+        "asset": "logiswitch-terminal.svg",
+        "caption": "What the switcher logs when it acts."
+      },
+      {
+        "kind": "table",
+        "heading": "Why Options+ alone does not fix it",
+        "columns": [
+          "Capability",
+          "Logi Options+",
+          "Karabiner-Elements",
+          "Solaar",
+          "logiswitch"
+        ],
+        "rows": [
+          [
+            "Switches the keyboard's real layout",
+            "yes",
+            "no — remaps keys",
+            "yes",
+            "yes"
+          ],
+          [
+            "Reacts to a KVM / host change",
+            "no",
+            "n/a",
+            "manual",
+            "yes, automatically"
+          ],
+          [
+            "Windows",
+            "yes",
+            "no",
+            "no",
+            "yes"
+          ],
+          [
+            "macOS",
+            "yes",
+            "yes",
+            "no",
+            "yes"
+          ],
+          [
+            "Runs headless, no account",
+            "no",
+            "yes",
+            "yes",
+            "yes"
+          ],
+          [
+            "Idle CPU",
+            "background service",
+            "event tap",
+            "daemon",
+            "~45 ms / 60 s"
+          ]
+        ],
+        "highlight": 4
+      },
+      {
+        "kind": "faq",
+        "heading": "Questions",
+        "items": [
+          {
+            "q": "Does it fight Logi Options+?",
+            "a": "No — it writes the same value Options+ would want, on the event Options+ ignores. The two agree rather than compete. The coexistence table above is measured, not assumed; the method and captured frames are in the repo's PROTOCOL.md."
+          },
+          {
+            "q": "What about Linux?",
+            "a": "Not yet. Solaar already covers Linux thoroughly; logiswitch exists because the problem lives on Windows and macOS, where nothing else fires on a KVM handover."
+          },
+          {
+            "q": "Which keyboards does it support?",
+            "a": "Logitech MX Keys and MX Keys S on Bolt or Unifying receivers — keyboards that carry their OS layout in firmware and switch it over the wire."
+          },
+          {
+            "q": "Can I see it decide?",
+            "a": "Yes. Every switch is logged, and the terminal capture above is what a handover looks like in real time."
+          }
+        ]
+      }
+    ]
   },
   "assets": [
     {
