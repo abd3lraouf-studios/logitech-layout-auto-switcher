@@ -261,7 +261,7 @@
       "height": 900
     },
     {
-      "role": "screenshot",
+      "role": "diagram",
       "file": "logiswitch-kvm.svg",
       "label": "KVM diagram",
       "note": "SVG",
@@ -269,7 +269,7 @@
       "height": 600
     },
     {
-      "role": "terminal",
+      "role": "screenshot",
       "file": "logiswitch-terminal.svg",
       "label": "Terminal output",
       "note": "SVG",
