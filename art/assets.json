@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "product": {
+    "slug": "layout-auto-switcher",
+    "name": "Layout Auto Switcher",
+    "category": "tool",
+    "headline": {
+      "lead": "Mac and Windows layouts",
+      "lift": "switched for you"
+    },
+    "tagline": "the instant a KVM hands the keyboard over",
+    "summary": "Detects which machine the KVM just handed the keyboard to and switches the layout to match.",
+    "platform": "Windows · macOS",
+    "licence": {
+      "label": "MIT",
+      "kind": "oss",
+      "price": "Free"
+    },
+    "distribution": "GitHub releases, source on GitHub",
+    "openSource": true,
+    "mono": null
+  },
+  "links": {
+    "repo": "https://github.com/abd3lraouf-studios/logitech-layout-auto-switcher",
+    "website": "https://abd3lraouf.dev/work/layout-auto-switcher/"
+  },
+  "press": {
+    "short": "Layout Auto Switcher switches between Mac and Windows keyboard layouts the instant a KVM hands the keyboard over. MIT licensed.",
+    "long": "Sharing one keyboard between a Mac and a PC through a KVM means the modifier layout is wrong half the time. Layout Auto Switcher detects the handover and switches the layout to match the machine that now has focus, with no keystroke and no delay. MIT licensed and open source.",
+    "naming": "Written \"Layout Auto Switcher\" in body copy. The full name, \"Logitech Layout Auto Switcher\", is used on first mention only. Logitech is a third-party trademark and the project is unaffiliated."
+  },
+  "assets": [
+    {
+      "role": "icon-card",
+      "file": "layout-auto-switcher-icon.png",
+      "label": "App icon, 256px",
+      "note": "PNG",
+      "width": 256,
+      "height": 256
+    },
+    {
+      "role": "icon-vector",
+      "file": "layout-auto-switcher-icon.svg",
+      "label": "App icon, vector",
+      "note": "SVG",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "role": "icon-press",
+      "file": "layout-auto-switcher-icon-512.png",
+      "label": "App icon, 512px",
+      "note": "PNG",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "role": "hero",
+      "file": "logiswitch-hero.svg",
+      "label": "Hero diagram",
+      "note": "SVG",
+      "width": 1760,
+      "height": 900
+    },
+    {
+      "role": "screenshot",
+      "file": "logiswitch-kvm.svg",
+      "label": "KVM diagram",
+      "note": "SVG",
+      "width": 1280,
+      "height": 600
+    },
+    {
+      "role": "terminal",
+      "file": "logiswitch-terminal.svg",
+      "label": "Terminal output",
+      "note": "SVG",
+      "width": 1080,
+      "height": 560
+    }
+  ]
+}

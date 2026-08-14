@@ -387,6 +387,12 @@ with `kIOReturnUnsupported` on every Mac and silently fell back to polling. Fixe
 in 2.0.1. The Easy-Switch round trip that 2.0.2 addresses was found the same way,
 by watching an MX Keys S move between a Mac and a PC and reading the frames.
 
+## Press & marketing assets
+
+Icons and diagrams for press use live in [`art/`](art/), indexed — with marketing
+copy, links and image dimensions — in [`art/assets.json`](art/assets.json).
+Product page: **[abd3lraouf.dev/work/layout-auto-switcher](https://abd3lraouf.dev/work/layout-auto-switcher/)**.
+
 ## Contributing
 
 Issues and PRs welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). The most useful
