@@ -28,7 +28,7 @@
     "press.long": "Full boilerplate; also closes the product page facts.",
     "press.naming": "How to spell the product name in print.",
     "theme.accent": "v2+. Per-app accent as a bare HSL triplet (\"H S% L%\"), contrast-gated at validation.",
-    "marketing.sections": "v2+. Ordered typed sections the product page renders through one renderer; kinds: features, steps, stats, showcase, table, faq, prose, terminal.",
+    "marketing.sections": "v2+. Ordered typed sections the product page renders through one renderer; kinds: features, steps, stats, showcase, table, faq, prose, terminal. Each may carry an optional \"lift\" beside its heading — the italic-serif half of the duet, one per heading, on the line carrying the promise. The page alternates its own grounds across this run; a kit chooses what to say, never where the bands fall.",
     "downloads": "v3+. 1-4 real ways to get the product. The FIRST entry must be url-based — it renders as the hero primary button. Absent = the hero falls back to the repository link.",
     "downloads[].label": "Button or chip text.",
     "downloads[].kind": "appstore | releases | dmg | zip | exe | appimage | website | repo (url-based) or brew | script (command-based).",
@@ -79,6 +79,7 @@
     "sections": [
       {
         "kind": "steps",
+        "lift": "in about one second.",
         "heading": "What happens on a handover",
         "intro": "A KVM hands the keyboard over without anything unplugging, which is exactly why the usual tools miss it.",
         "steps": [
@@ -130,6 +131,7 @@
       },
       {
         "kind": "table",
+        "lift": "and what does.",
         "heading": "Why Options+ alone does not fix it",
         "columns": [
           "Capability",
