@@ -79,8 +79,8 @@
     "sections": [
       {
         "kind": "steps",
-        "lift": "in about one second.",
         "heading": "What happens on a handover",
+        "lift": "in about one second.",
         "intro": "A KVM hands the keyboard over without anything unplugging, which is exactly why the usual tools miss it.",
         "steps": [
           {
@@ -131,8 +131,8 @@
       },
       {
         "kind": "table",
-        "lift": "and what does.",
         "heading": "Why Options+ alone does not fix it",
+        "lift": "and what does.",
         "columns": [
           "Capability",
           "Logi Options+",
