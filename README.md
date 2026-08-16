@@ -1,10 +1,25 @@
 <div align="center">
 
-<img src="assets/icon.png" alt="" width="112" height="112">
+<!-- BEGIN abd3lraouf-studios:hero -->
+<p align="center">
+    <img src="art/layout-auto-switcher-icon.png" alt="Layout Auto Switcher" height="120">
+</p>
 
-# Logitech Layout Auto Switcher
+<h1 align="center">Layout Auto Switcher</h1>
 
-**Your MX Keys should know which computer it is plugged into. Now it does.**
+<p align="center">
+    <strong>Detects which machine the KVM just handed the keyboard to and switches the layout to match.</strong><br>
+    Windows · macOS · MIT
+</p>
+
+<p align="center">
+    <a href="https://github.com/abd3lraouf-studios/logitech-layout-auto-switcher/releases/latest"><strong>Get it on GitHub →</strong></a>
+</p>
+
+<p align="center">
+    <a href="https://abd3lraouf.dev/projects/layout-auto-switcher/">abd3lraouf.dev/projects/layout-auto-switcher/</a>
+</p>
+<!-- END abd3lraouf-studios:hero -->
 
 Automatically switches a Logitech keyboard between **Mac and Windows layouts** the
 instant a KVM, Easy-Switch channel or cable hands it to another machine — so you
@@ -16,8 +31,6 @@ never hold **Fn+O / Fn+P** for seven seconds again.
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/downloads/)
 [![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-lightgrey.svg)](docs/INSTALL.md)
-
-[**Product page → abd3lraouf.dev/work/layout-auto-switcher**](https://abd3lraouf.dev/work/layout-auto-switcher/)
 
 <img alt="An MX Keys keyboard with the two keys left of the spacebar ringed: each carries two legends, opt and start on one, cmd and alt on the other. On macOS the Command and Option legends are live and the keyboard reports platform 1; on Windows the Alt and Start legends are live and it reports platform 0. Either way the switch is corrected in about one second." src="assets/hero.svg" width="900">
 
@@ -387,11 +400,16 @@ with `kIOReturnUnsupported` on every Mac and silently fell back to polling. Fixe
 in 2.0.1. The Easy-Switch round trip that 2.0.2 addresses was found the same way,
 by watching an MX Keys S move between a Mac and a PC and reading the frames.
 
+<!-- BEGIN abd3lraouf-studios:press -->
 ## Press & marketing assets
 
-Icons and diagrams for press use live in [`art/`](art/), indexed — with marketing
-copy, links and image dimensions — in [`art/assets.json`](art/assets.json).
-Product page: **[abd3lraouf.dev/work/layout-auto-switcher](https://abd3lraouf.dev/work/layout-auto-switcher/)**.
+Layout Auto Switcher switches between Mac and Windows keyboard layouts the instant a KVM hands the keyboard over. MIT licensed.
+
+**Naming.** Written "Layout Auto Switcher" in body copy. The full name, "Logitech Layout Auto Switcher", is used on first mention only. Logitech is a third-party trademark and the project is unaffiliated.
+
+The press kit — icons, screen art, boilerplate, the fact sheet and a downloadable
+archive — is at **[abd3lraouf.dev/press/layout-auto-switcher/](https://abd3lraouf.dev/press/layout-auto-switcher/)**.
+<!-- END abd3lraouf-studios:press -->
 
 ## Contributing
 
