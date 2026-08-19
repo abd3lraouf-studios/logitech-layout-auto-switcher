@@ -14,12 +14,14 @@ import getpass
 import logging
 import os
 import plistlib
+import shutil
 import subprocess
 import sys
 import tempfile
 import time
 from pathlib import Path
 
+from .notify import _macapp
 from .platform import (
     APP_NAME,
     LEGACY_SERVICE_LABELS,
@@ -340,7 +342,26 @@ def _macos_uninstall() -> list[str]:
         path.unlink()
         removed.append(SERVICE_LABEL)
     removed.extend(_remove_legacy_agents(domain))
+    removed.extend(_remove_notifier_app())
     return removed
+
+
+def _remove_notifier_app() -> list[str]:
+    """Delete the app the notifier built for itself.
+
+    It is the one thing this agent leaves outside its own directories that a user
+    can see -- System Settings lists it under Notifications -- so an uninstall that
+    left it behind would be leaving a ghost with a switch.
+    """
+    bundle = _macapp.bundle_path()
+    if not bundle.exists():
+        return []
+    try:
+        shutil.rmtree(bundle)
+    except OSError as exc:  # pragma: no cover - a bundle we cannot delete
+        log.debug("could not remove %s: %s", bundle, exc)
+        return []
+    return [bundle.name]
 
 
 def _macos_status() -> dict:

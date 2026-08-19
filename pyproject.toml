@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "logitech-layout-auto-switcher"
-version = "2.6.0"
+version = "2.7.0"
 description = "Automatically switch a Logitech keyboard between Mac and Windows layouts when a KVM, Easy-Switch channel or cable moves it to another computer."
 readme = "README.md"
 license = { text = "MIT" }
@@ -47,6 +47,11 @@ Documentation = "https://github.com/abd3lraouf-studios/logitech-layout-auto-swit
 
 [tool.setuptools.packages.find]
 include = ["logiswitch*"]
+
+# The icon macOS notifications are posted with; logiswitch.notify._macapp renders it
+# into the notifier app it builds, so the wheel has to carry it.
+[tool.setuptools.package-data]
+"logiswitch.notify" = ["icon.png"]
 
 [tool.ruff]
 line-length = 100

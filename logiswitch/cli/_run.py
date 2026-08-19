@@ -55,10 +55,12 @@ def cmd_watch(args: argparse.Namespace) -> int:
 def cmd_notify_test(_args: argparse.Namespace) -> int:
     """Prove a notification can actually reach the desktop.
 
-    Worth its own command because the failure is silent: on macOS an ``osascript``
-    notification is attributed to Script Editor, and if the user has not allowed
-    that, nothing appears and nothing errors. Waiting for a real layout change to
-    discover this is a poor way to find out.
+    Worth its own command because the failure is silent: on macOS a notification the
+    user has not allowed simply does not appear, and nothing errors. Waiting for a
+    real layout change to discover this is a poor way to find out.
+
+    On macOS this is also where the notifier app gets built and, the first time,
+    where macOS asks whether to allow its notifications at all.
     """
     notifier = notify.Notifier()
     print(f"backend: {notify.backend_name()}")
@@ -70,7 +72,7 @@ def cmd_notify_test(_args: argparse.Namespace) -> int:
     )
     if notifier.deliver(note):
         print("sent -- if no notification appeared, it is being blocked:")
-        print("  macOS:   System Settings > Notifications > Script Editor")
+        print(f"  macOS:   System Settings > Notifications > {notify.macos_settings_name()}")
         print("  Windows: Settings > System > Notifications")
         return 0
     print("the notification command failed; re-run with -v for the reason", file=sys.stderr)

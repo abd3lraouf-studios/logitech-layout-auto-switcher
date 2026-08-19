@@ -193,3 +193,20 @@ def test_observe_mode_is_baked_into_the_plist(launchctl, tmp_path):
 def test_a_normal_install_does_not_observe(launchctl, tmp_path):
     service.install("macos")
     assert "--observe" not in _installed_plist(tmp_path)["ProgramArguments"]
+
+
+def test_uninstall_takes_the_notifier_app_with_it(launchctl, tmp_path):
+    """It is the only thing we leave where a user can see it: System Settings lists
+    the notifier app under Notifications, switch and all."""
+    from logiswitch.notify import _macapp
+
+    plist = tmp_path / "Library" / "LaunchAgents" / f"{service.SERVICE_LABEL}.plist"
+    plist.parent.mkdir(parents=True)
+    plist.write_text("")
+    bundle = _macapp.bundle_path()
+    (bundle / "Contents" / "MacOS").mkdir(parents=True)
+
+    removed = service.uninstall()
+
+    assert not bundle.exists()
+    assert _macapp.BUNDLE_NAME in removed

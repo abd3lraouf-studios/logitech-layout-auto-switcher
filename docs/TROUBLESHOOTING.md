@@ -166,9 +166,14 @@ logiswitch notify-test
 If that prints `sent` and you still saw nothing, the notification is being
 *blocked*, not failing:
 
-* **macOS** — an `osascript` notification is attributed to **Script Editor**, so
-  that is what has to be allowed: System Settings → Notifications → Script Editor.
-  Focus and Do Not Disturb also hide them.
+* **macOS** — notifications are posted by **Layout Auto Switcher**, a small app
+  the agent builds for itself in `~/Library/Application Support/logiswitch/`, so
+  that is what has to be allowed: System Settings → Notifications → Layout Auto
+  Switcher. macOS asks once, when the first notification is posted; if that prompt
+  was dismissed or declined, turn it on there. Focus and Do Not Disturb also hide
+  them. On a Mac where that app cannot be built the agent falls back to `osascript`,
+  whose notifications are attributed to **Script Editor** instead — `logiswitch
+  doctor` says which of the two is in use.
 * **Windows** — Settings → System → Notifications, and check Focus Assist.
 
 If it appears when you run it by hand but never from the background agent, confirm

@@ -1,5 +1,37 @@
 # Changelog
 
+## 2.7.0 — 2026-08-19
+
+Notifications from this agent arrived on macOS as **Script Editor** -- its icon, its
+name, and its single switch in System Settings, shared with every other script on the
+machine. That is not a cosmetic detail of `osascript`: macOS puts the identity of
+whichever process posted a notification on it, and `osascript` has none of its own.
+
+### Added
+
+- **Notifications wear this project's icon and name on macOS.** The agent now compiles
+  a small notifier app for itself into `~/Library/Application Support/logiswitch/` --
+  `osacompile` for the applet, `sips` and `iconutil` for the icon, all of them already
+  on every Mac -- and posts through that. The notification shows the keycap icon and
+  **Layout Auto Switcher**, and System Settings > Notifications gains an entry of ours
+  alone: silencing this agent no longer silences unrelated scripts, and allowing an
+  unrelated script no longer speaks for this one. macOS asks once, at the first
+  notification, whether to allow them at all.
+
+  The app is built at first use and rebuilt only when the script or the icon it was
+  built from changes. If any step of that fails -- a missing tool, a read-only home, a
+  signature macOS declines -- the notification still goes out through `osascript`
+  exactly as before; `logiswitch doctor` and `logiswitch notify-test` name which of
+  the two is in use, and `notify-test` names the entry to allow in System Settings.
+
+  The text keeps the property the `osascript` path was written for: it cannot be
+  quoted wrong. The compiled script is a constant, and the body and title reach it
+  through the environment, so a device called `He said "hi"` is still just text.
+
+- **`logiswitch uninstall` removes the notifier app.** It is the one thing this agent
+  leaves where a user can see it; an uninstall that left it behind would leave a ghost
+  in System Settings with a switch that no longer does anything.
+
 ## 2.6.0 — 2026-08-07
 
 The calculator key on an MX Keys S did nothing while this agent was running, and

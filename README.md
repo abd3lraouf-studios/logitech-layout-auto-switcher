@@ -268,10 +268,18 @@ installed agent:
 logiswitch install --no-notify
 ```
 
+They arrive **as this app**, not as Script Editor. macOS puts the icon and name of
+whichever process posted a notification on it, and `osascript` — the obvious way for
+a Python agent to raise one — is Script Editor's. So on first use the agent compiles
+a tiny notifier app of its own into `~/Library/Application Support/logiswitch/`,
+carrying this project's icon and its own identity, and posts through that. macOS asks
+once whether to allow it; after that the switch is **System Settings → Notifications
+→ Layout Auto Switcher**, ours alone rather than one shared with every script on the
+machine.
+
 If nothing appears, the notification is being blocked rather than not sent — run
-`logiswitch notify-test` and check **System Settings → Notifications → Script
-Editor** on macOS (that is who macOS attributes an `osascript` notification to), or
-**Settings → System → Notifications** on Windows.
+`logiswitch notify-test`, which names the entry to allow, or check **Settings →
+System → Notifications** on Windows.
 
 ## When the keyboard types the wrong characters
 

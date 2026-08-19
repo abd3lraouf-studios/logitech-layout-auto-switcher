@@ -15,9 +15,14 @@ has a cooldown, and a fault that keeps recurring is reported once, as a standing
 condition, rather than once per occurrence.
 
 No new dependencies: the text reaches the OS through a channel that cannot be quoted
-wrong -- ``osascript`` argv on macOS, the WinRT toast API called in-process on Windows
--- so there is no command line to escape, and nothing here can break the agent if it
-fails.
+wrong -- the environment of our own applet (or ``osascript`` argv) on macOS, the WinRT
+toast API called in-process on Windows -- so there is no command line to escape, and
+nothing here can break the agent if it fails.
+
+**It should look like itself.** A macOS notification wears the icon of whatever posted
+it, which for ``osascript`` means Script Editor. :mod:`._macapp` builds a small app
+bundle carrying this project's icon and posts through that instead, falling back to
+``osascript`` on any Mac where that cannot be built.
 """
 
 from __future__ import annotations
@@ -31,6 +36,7 @@ import time
 from typing import Callable, NamedTuple
 
 from ..platform import is_macos, is_windows
+from . import _macapp
 
 log = logging.getLogger(__name__)
 
@@ -101,6 +107,24 @@ def macos_command(note: Notification) -> list[str]:
 
 
 def _send_macos(note: Notification) -> None:
+    """Post through our own app bundle when there is one, and bare ``osascript``
+    when there is not.
+
+    The bundle is what puts this agent's icon and name on the notification instead
+    of Script Editor's; see :mod:`logiswitch.notify._macapp`. It is also the only
+    part of the path that can be missing, so a failure here is not a lost
+    notification -- it is the same notification, shown the old way.
+    """
+    applet = _macapp.ensure()
+    if applet is not None:
+        try:
+            _macapp.show(applet, note.body, note.title, SEND_TIMEOUT)
+            return
+        except Exception as exc:
+            # Deleted bundle, signature invalidated by an OS upgrade: decide again
+            # next time, and get this notification out through osascript now.
+            log.debug("the notifier app did not run (%s); using osascript", exc)
+            _macapp.forget()
     subprocess.run(
         macos_command(note),
         capture_output=True,
@@ -129,10 +153,23 @@ def default_sender() -> Sender | None:
 def backend_name() -> str:
     """What ``doctor`` and ``notify-test`` report."""
     if is_macos():
-        return "macOS osascript"
+        if _macapp.ensure() is not None:
+            return f"macOS Notification Centre, as {_macapp.DISPLAY_NAME}"
+        return "macOS osascript (attributed to Script Editor)"
     if is_windows():
         return "Windows toast (native)"
     return "unsupported on this platform"
+
+
+def macos_settings_name() -> str:
+    """Which entry in System Settings > Notifications governs our notifications.
+
+    Ours once we have a bundle of our own; Script Editor -- shared with every other
+    script on the machine -- when we do not.
+    """
+    if is_macos() and _macapp.ensure() is not None:
+        return _macapp.DISPLAY_NAME
+    return "Script Editor"
 
 
 class Notifier:

@@ -11,8 +11,11 @@ Nothing in this file spawns a process -- the sender is injected, following the
 
 from __future__ import annotations
 
+import plistlib
+import subprocess
 import threading
 import time
+from pathlib import Path
 
 import pytest
 
@@ -227,3 +230,137 @@ def test_windows_can_actually_raise_a_toast():
     notify._send_windows(
         notify.Notification(notify.SWITCHED, "logiswitch self-test toast", "logiswitch")
     )
+
+
+# -- the notification wears our icon, not Script Editor's ----------------------
+
+
+@pytest.fixture
+def fresh_macapp():
+    """``_macapp.ensure`` caches its answer for the process; tests need it not to."""
+    from logiswitch.notify import _macapp
+
+    _macapp.forget()
+    yield _macapp
+    _macapp.forget()
+
+
+def test_the_applescript_reads_its_text_from_the_environment(fresh_macapp):
+    """The applet is given no argv, so the same safety has to come from elsewhere."""
+    source = fresh_macapp.SOURCE
+    assert fresh_macapp.BODY_ENV in source and fresh_macapp.TITLE_ENV in source
+    assert "system attribute" in source
+    assert HOSTILE not in source, "the script is a constant; nothing is interpolated"
+
+
+def test_the_body_travels_in_the_environment_verbatim(fresh_macapp):
+    env = fresh_macapp.environment(HOSTILE, "logiswitch")
+    assert env[fresh_macapp.BODY_ENV] == HOSTILE
+    assert env[fresh_macapp.TITLE_ENV] == "logiswitch"
+    assert "PATH" in env, "the applet still needs the ambient environment"
+
+
+def test_macos_posts_through_the_bundle_when_there_is_one(fresh_macapp, monkeypatch):
+    shown = {}
+    monkeypatch.setattr(fresh_macapp, "ensure", lambda: Path("/tmp/Notifier.app/x/applet"))
+    monkeypatch.setattr(
+        fresh_macapp,
+        "show",
+        lambda applet, body, title, timeout: shown.update(body=body, title=title),
+    )
+    monkeypatch.setattr(
+        notify.subprocess, "run", lambda *a, **k: pytest.fail("osascript must not be used")
+    )
+
+    notify._send_macos(notify.Notification(notify.SWITCHED, HOSTILE))
+
+    assert shown == {"body": HOSTILE, "title": "logiswitch"}
+
+
+def test_macos_falls_back_to_osascript_with_no_bundle(fresh_macapp, monkeypatch):
+    """Every Mac must still get its notification, icon or no icon."""
+    commands = []
+    monkeypatch.setattr(fresh_macapp, "ensure", lambda: None)
+    monkeypatch.setattr(notify.subprocess, "run", lambda command, **k: commands.append(command))
+
+    notify._send_macos(notify.Notification(notify.SWITCHED, HOSTILE))
+
+    assert commands and commands[0][0] == "osascript"
+    assert commands[0][-2] == HOSTILE
+
+
+def test_a_bundle_that_will_not_run_is_reconsidered_next_time(fresh_macapp, monkeypatch):
+    """A deleted or unsignable bundle must not silently cost every notification."""
+    commands = []
+    monkeypatch.setattr(fresh_macapp, "ensure", lambda: Path("/gone/applet"))
+
+    def explode(*_args, **_kwargs):
+        raise OSError("no such file")
+
+    monkeypatch.setattr(fresh_macapp, "show", explode)
+    monkeypatch.setattr(notify.subprocess, "run", lambda command, **k: commands.append(command))
+
+    notify._send_macos(notify.Notification(notify.SWITCHED, "still shown"))
+
+    assert commands and commands[0][0] == "osascript", "the notification was not lost"
+    assert fresh_macapp._tried is False, "the next notification decides again"
+
+
+def test_the_bundle_is_rebuilt_when_the_script_or_icon_changes(fresh_macapp, monkeypatch):
+    before = fresh_macapp.stamp()
+    assert before == fresh_macapp.stamp(), "the same inputs give the same stamp"
+    monkeypatch.setattr(fresh_macapp, "SOURCE", fresh_macapp.SOURCE + "\n-- changed\n")
+    assert fresh_macapp.stamp() != before
+
+
+def test_the_plist_gets_an_identity_macos_can_attach_a_setting_to(fresh_macapp, tmp_path):
+    """osacompile leaves no identifier, and a notification from a bundle without
+    one is dropped without a word."""
+    app = tmp_path / fresh_macapp.BUNDLE_NAME
+    (app / "Contents").mkdir(parents=True)
+    with (app / "Contents" / "Info.plist").open("wb") as handle:
+        plistlib.dump({"CFBundleName": "notifier", "CFBundleIconName": "applet"}, handle)
+
+    fresh_macapp._rewrite_plist(app)
+
+    with (app / "Contents" / "Info.plist").open("rb") as handle:
+        info = plistlib.load(handle)
+    assert info["CFBundleIdentifier"] == fresh_macapp.BUNDLE_ID
+    assert info["CFBundleName"] == fresh_macapp.DISPLAY_NAME
+    assert info["LSUIElement"] is True, "a notification must not put an icon in the Dock"
+    assert "CFBundleIconName" not in info, "the stock AppleScript icon must not win"
+
+
+def test_the_icon_ships_with_the_package(fresh_macapp):
+    """A wheel that lost the icon would build a bundle wearing the wrong one."""
+    assert fresh_macapp.ICON.exists()
+    assert fresh_macapp.ICON.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
+
+
+# -- building the bundle has to actually work, not merely look right -----------
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(not notify.is_macos(), reason="needs osacompile, sips and codesign")
+def test_macos_can_actually_build_the_notifier_app(fresh_macapp, tmp_path, monkeypatch):
+    """Verified the way it fails in production: let the real tools run.
+
+    Nothing is posted -- that would need the user's permission and put a banner on
+    their screen -- but every step that produces the bundle is exercised, and macOS
+    is asked whether the result is a valid, signed app.
+    """
+    monkeypatch.setattr(fresh_macapp, "data_dir", lambda: tmp_path)
+    monkeypatch.setattr(fresh_macapp, "_register", lambda bundle: None)
+
+    applet = fresh_macapp.ensure()
+
+    assert applet is not None and applet.exists()
+    bundle = tmp_path / fresh_macapp.BUNDLE_NAME
+    assert (bundle / "Contents" / "Resources" / "applet.icns").stat().st_size > 0
+    assert not (bundle / "Contents" / "Resources" / "Assets.car").exists()
+    subprocess.run(["codesign", "--verify", str(bundle)], check=True, capture_output=True)
+    with (bundle / "Contents" / "Info.plist").open("rb") as handle:
+        assert plistlib.load(handle)["CFBundleIdentifier"] == fresh_macapp.BUNDLE_ID
+
+    fresh_macapp.forget()
+    assert fresh_macapp.ensure() == applet, "an unchanged bundle is not rebuilt"
