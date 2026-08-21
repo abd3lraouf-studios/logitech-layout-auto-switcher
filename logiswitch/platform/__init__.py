@@ -9,6 +9,7 @@ abstractions re-exported here, never on a specific platform.
 
 from __future__ import annotations
 
+from ._subprocess import CREATE_NO_WINDOW
 from .paths import (
     APP_NAME,
     LEGACY_SERVICE_LABELS,
@@ -32,6 +33,7 @@ from .watchers import DeviceEvent, Watcher, WatcherCallback, create_watcher
 
 __all__ = [
     "APP_NAME",
+    "CREATE_NO_WINDOW",
     "LEGACY_SERVICE_LABELS",
     "LEGACY_TASK_NAME",
     "MANAGED_ENV_VAR",

@@ -24,6 +24,7 @@ from pathlib import Path
 from .notify import _macapp
 from .platform import (
     APP_NAME,
+    CREATE_NO_WINDOW,
     LEGACY_SERVICE_LABELS,
     LEGACY_TASK_NAME,
     MANAGED_ENV_VAR,
@@ -107,7 +108,7 @@ class ServiceError(RuntimeError):
 
 def _run(args: list[str], check: bool = True) -> subprocess.CompletedProcess:
     log.debug("running %s", args)
-    result = subprocess.run(args, capture_output=True, text=True)
+    result = subprocess.run(args, capture_output=True, text=True, creationflags=CREATE_NO_WINDOW)
     if check and result.returncode != 0:
         raise ServiceError(
             f"{args[0]} failed ({result.returncode}): {(result.stderr or result.stdout).strip()}"

@@ -21,7 +21,7 @@ import logging
 import subprocess
 from typing import Callable
 
-from .platform import is_macos, is_windows
+from .platform import CREATE_NO_WINDOW, is_macos, is_windows
 
 log = logging.getLogger(__name__)
 
@@ -320,7 +320,7 @@ def _is_competitor(name: str) -> bool:
 
 
 def _run(command: list[str]) -> str:
-    completed = subprocess.run(command, capture_output=True, text=True, timeout=5.0, check=False)
+    completed = subprocess.run(command, capture_output=True, text=True, timeout=5.0, check=False, creationflags=CREATE_NO_WINDOW)
     return completed.stdout or ""
 
 

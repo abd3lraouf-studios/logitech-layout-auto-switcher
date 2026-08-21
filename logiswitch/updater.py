@@ -31,6 +31,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from . import __version__, service
+from .platform import CREATE_NO_WINDOW
 
 log = logging.getLogger(__name__)
 
@@ -191,7 +192,7 @@ def _pip_install(wheel: Path) -> None:
         str(wheel),
     ]
     log.debug("running %s", cmd)
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(cmd, capture_output=True, text=True, creationflags=CREATE_NO_WINDOW)
     if result.returncode != 0:
         raise UpdateError("pip install failed:\n" + (result.stderr or result.stdout).strip())
 

@@ -7,6 +7,8 @@ of raising, because a diagnostic that breaks the thing it diagnoses is worthless
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import pytest
 
 from logiswitch import diagnostics
@@ -197,3 +199,16 @@ def test_electron_helpers_collapse_into_their_app(monkeypatch):
         "logioptionsplus_agent",
         "logioptionsplus_updater",
     ], "helpers fold in; separate products do not"
+
+
+def test_helpers_are_started_without_a_console(monkeypatch):
+    """A windowless agent must not flash a terminal for every helper it runs."""
+    seen = {}
+
+    def fake_run(_cmd, **kwargs):
+        seen["flags"] = kwargs.get("creationflags")
+        return SimpleNamespace(stdout="", stderr="", returncode=0)
+
+    monkeypatch.setattr(diagnostics.subprocess, "run", fake_run)
+    diagnostics._run(["tasklist"])
+    assert seen["flags"] == diagnostics.CREATE_NO_WINDOW
