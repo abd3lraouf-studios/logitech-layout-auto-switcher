@@ -320,7 +320,14 @@ def _is_competitor(name: str) -> bool:
 
 
 def _run(command: list[str]) -> str:
-    completed = subprocess.run(command, capture_output=True, text=True, timeout=5.0, check=False, creationflags=CREATE_NO_WINDOW)
+    completed = subprocess.run(
+        command,
+        capture_output=True,
+        text=True,
+        timeout=5.0,
+        check=False,
+        creationflags=CREATE_NO_WINDOW,
+    )
     return completed.stdout or ""
 
 
