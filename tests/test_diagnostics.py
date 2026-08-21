@@ -201,6 +201,12 @@ def test_electron_helpers_collapse_into_their_app(monkeypatch):
     ], "helpers fold in; separate products do not"
 
 
+#: The ``no_local_rivals`` autouse fixture stubs ``diagnostics._run`` around
+#: every test, so the real body is captured here at collection time -- before
+#: any fixture has touched the module -- for the one test that exercises it.
+_REAL_RUN = diagnostics._run
+
+
 def test_helpers_are_started_without_a_console(monkeypatch):
     """A windowless agent must not flash a terminal for every helper it runs."""
     seen = {}
@@ -210,5 +216,5 @@ def test_helpers_are_started_without_a_console(monkeypatch):
         return SimpleNamespace(stdout="", stderr="", returncode=0)
 
     monkeypatch.setattr(diagnostics.subprocess, "run", fake_run)
-    diagnostics._run(["tasklist"])
+    assert _REAL_RUN(["tasklist"]) == ""
     assert seen["flags"] == diagnostics.CREATE_NO_WINDOW
