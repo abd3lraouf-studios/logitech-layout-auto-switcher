@@ -8,7 +8,7 @@
 <h1 align="center">Layout Auto Switcher</h1>
 
 <p align="center">
-    <strong>Detects which machine the KVM just handed the keyboard to and switches the layout to match.</strong><br>
+    <strong>Switches your Mac and Windows keyboard layouts the instant a KVM hands the keyboard to the other machine — no keystroke, no delay.</strong><br>
     Windows · macOS · MIT
 </p>
 
