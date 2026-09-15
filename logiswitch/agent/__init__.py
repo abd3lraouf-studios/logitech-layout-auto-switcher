@@ -159,6 +159,26 @@ QUIET_RETRY_ATTEMPTS = 3
 QUIET_CORRECTION_BUDGET = 3
 
 
+def _describe_schedule(
+    now: float,
+    next_assert: float | None,
+    next_heartbeat: float | None,
+    next_idle_peek: float | None,
+) -> str:
+    """What the worker will do next, for the steady summary.
+
+    "no device" alone could not tell an agent that will look again in five minutes
+    from one that never will; eleven hours of identical lines were both.
+    """
+    if next_assert is not None:
+        return f"next check in {max(0.0, next_assert - now):.0f}s"
+    if next_idle_peek is not None:
+        return "watching this machine's input to reclaim"
+    if next_heartbeat is not None:
+        return f"backstop in {max(0.0, next_heartbeat - now):.0f}s"
+    return "waiting for a device event only (no re-check scheduled)"
+
+
 class _Event(Enum):
     DEVICE_CHANGED = "device_changed"
     DEVICE_WOKE = "device_woke"
@@ -251,6 +271,8 @@ class Agent(_ArbitrationMixin, _SessionMixin):
         #: Completed passes of :meth:`_apply`. Observability only; never a decision.
         self._apply_count = 0
         self._hints: dict[str, list[int]] = self._load_hints()
+        #: Last reason a session could not be built, so it is logged once per change.
+        self._last_build_problem: str | None = None
         self._retry = 0.0
         self._changes_in_a_row = 0
         self._contention_warned = False
@@ -421,8 +443,10 @@ class Agent(_ArbitrationMixin, _SessionMixin):
     # -- event intake ---------------------------------------------------------
 
     def _on_device_event(self, event: DeviceEvent, description: str) -> None:
-        # Runs on an OS/watcher thread: enqueue and return, nothing more.
-        log.debug("device %s: %s", event.value, description)
+        # Runs on an OS/watcher thread: enqueue and return, nothing more. INFO, not
+        # DEBUG: a dock replug the agent then failed to act on could only be found in
+        # the system log, and not every machine this is installed on keeps one.
+        log.info("OS reports a Logitech interface %s: %s", event.value, description)
         self._put((_Event.DEVICE_CHANGED, event))
 
     def _on_hidpp_frame(self, frame: bytes) -> None:
@@ -681,10 +705,21 @@ class Agent(_ArbitrationMixin, _SessionMixin):
                         # and wait for the device to announce itself; the slow heartbeat
                         # stays armed as the backstop.
                         self._retry = 0.0
+                        # Giving up must not also disarm the backstop. The heartbeat that
+                        # scheduled this pass was consumed when it fired, and with no
+                        # session open there is no reader to hear the keyboard return
+                        # either -- so nothing short of an OS device event would ever
+                        # look again. That left a keyboard wrong for eleven hours.
+                        if next_heartbeat is None and (interval := self._heartbeat_interval()):
+                            next_heartbeat = time.monotonic() + interval
                         trace.HEALTH.bump("quiet_retries_abandoned")
-                        log.debug(
-                            "device absent after %d tries; waiting for it to return",
+                        log.info(
+                            "device absent after %d tries; waiting for it to announce "
+                            "itself (backstop re-check %s)",
                             QUIET_RETRY_ATTEMPTS,
+                            f"in {next_heartbeat - time.monotonic():.0f}s"
+                            if next_heartbeat is not None
+                            else "disabled",
                         )
                         continue
                     self._retry = min(
@@ -725,7 +760,9 @@ class Agent(_ArbitrationMixin, _SessionMixin):
 
             if now >= self._next_summary:
                 self._next_summary = now + STEADY_SUMMARY_INTERVAL
-                self._log_steady_summary()
+                self._log_steady_summary(
+                    _describe_schedule(now, next_assert, next_heartbeat, next_idle_peek)
+                )
 
             if next_heartbeat is not None and now >= next_heartbeat:
                 next_heartbeat = None
@@ -801,7 +838,7 @@ class Agent(_ArbitrationMixin, _SessionMixin):
             return False
         return (time.monotonic() - self._peer_last_seen) < PEER_MEMORY
 
-    def _log_steady_summary(self) -> None:
+    def _log_steady_summary(self, schedule: str = "") -> None:
         """Say what is true right now, whether or not anything changed.
 
         The per-device INFO line is de-duplicated so a healthy agent does not repeat
@@ -820,12 +857,13 @@ class Agent(_ArbitrationMixin, _SessionMixin):
             if self._stood_down:
                 peer += " (standing down)"
         log.info(
-            "steady on %s: %s | %s | %s%s",
+            "steady on %s: %s | %s | %s%s%s",
             socket.gethostname(),
             state,
             trace.HEALTH.summary(),
             diagnostics.describe_host(),
             peer,
+            f" | {schedule}" if schedule else "",
         )
 
     # -- the actual work ------------------------------------------------------

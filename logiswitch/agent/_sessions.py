@@ -33,18 +33,35 @@ class _SessionMixin:
         _last_written: dict[int, int]
         _driven: frozenset[int]
         _platform_features: dict[int, int]
+        _last_build_problem: str | None
 
         def _on_hidpp_frame(self, frame: bytes) -> None: ...
+
+    def _note_build(self, problem: str | None) -> None:
+        """Log why a session could not be built, once per distinct reason.
+
+        At DEBUG these were invisible in every installed log, so "the receiver is
+        there but nothing happens" had no explanation. Logged on change rather than
+        per attempt because a keyboard on another channel fails the same way on
+        every retry.
+        """
+        if problem == self._last_build_problem:
+            return
+        self._last_build_problem = problem
+        if problem is not None:
+            log.info("no session: %s", problem)
 
     def _build_sessions(self) -> None:
         groups = hidpp.find_groups(self.cfg.vendor_id)
         if not groups:
+            self._note_build("no Logitech HID++ receiver or device is attached")
             return
+        problems: list[str] = []
         for group in groups:
             try:
                 transport = hidpp.open_transport(group)
             except Exception as exc:
-                log.debug("cannot open %s: %s", group, exc)
+                problems.append(f"cannot open {group}: {exc}")
                 continue
             session = Session(group=group, transport=transport)
             transport.on_notification = self._on_hidpp_frame
@@ -52,14 +69,14 @@ class _SessionMixin:
                 devices = hidpp.discover_devices(transport, hint=self._hints.get(group.label))
                 session.devices = hidpp.probe_devices(devices)
             except Exception as exc:
-                log.debug("discovery failed on %s: %s", group, exc)
+                problems.append(f"discovery failed on {group}: {exc}")
                 transport.close()
                 continue
             if not session.supported:
                 # Nothing here can switch platform (a mouse-only receiver, say).
                 # Keep no handle open for it.
                 names = ", ".join(i.name for _, i in session.devices) or "no devices"
-                log.debug("%s has nothing to drive (%s)", group, names)
+                problems.append(f"{group} has nothing to drive ({names})")
                 transport.close()
                 continue
             self._hints[group.label] = [d.index for d, _ in session.supported]
@@ -74,6 +91,7 @@ class _SessionMixin:
                     info.kind,
                 )
             self._sessions.append(session)
+        self._note_build(None if self._sessions else "; ".join(problems))
         self._refresh_driven()
         self._save_hints()
 

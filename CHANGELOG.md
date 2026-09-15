@@ -1,5 +1,35 @@
 # Changelog
 
+## 2.7.1 — 2026-09-15
+
+A keyboard went unswitched for eleven hours after its receiver's dock was unplugged and
+plugged back in. The receiver came back, the keyboard was not answering yet, the agent
+stopped retrying as event-only mode is meant to -- and with that, never looked again.
+
+### Fixed
+
+- **Event-only mode no longer loses its backstop after giving up on an absent device.**
+  The slow re-check (five minutes by default) was consumed when it fired and not armed
+  again when the retries that followed gave up. With no session open there was no
+  reader to hear the keyboard return either, so only a restart recovered. Giving up now
+  re-arms the backstop, restoring the bound on "silently wrong" that mode promises.
+- **Helper processes no longer flash a console window on Windows.** The process-list
+  check, `pip` during an update and `sc` in service mode are started with
+  `CREATE_NO_WINDOW`.
+
+### Changed
+
+- **The installed log records enough to diagnose a missed switch after the fact.**
+  Previously only visible with `-v`:
+  - OS device arrivals and removals (`OS reports a Logitech interface arrived: …`);
+  - why no session could be built -- receiver cannot be opened, discovery failed, or
+    nothing on it can switch -- logged once per distinct reason, not per retry;
+  - event-only giving up on an absent device, with when the backstop will look again.
+
+  The ten-minute `steady` line now ends with what the agent will do next
+  (`next check in 2s`, `backstop in 300s`, or `no re-check scheduled`), so a stuck
+  agent can be told from a waiting one by reading a single line.
+
 ## 2.7.0 — 2026-08-19
 
 Notifications from this agent arrived on macOS as **Script Editor** -- its icon, its

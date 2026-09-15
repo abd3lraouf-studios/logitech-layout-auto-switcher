@@ -4,7 +4,7 @@ import time
 import fakehid
 import pytest
 
-from logiswitch import diagnostics
+from logiswitch import diagnostics, trace
 from logiswitch.agent import Agent, AgentConfig
 from logiswitch.platform.watchers import DeviceEvent
 
@@ -412,6 +412,41 @@ def test_a_reconnect_restarts_the_backoff_instead_of_inheriting_it(receiver, tmp
         agent.shutdown()
 
 
+def test_event_only_backstop_survives_giving_up_on_an_absent_device(receiver, tmp_path):
+    """The eleven-hour miss: event-only stopped retrying and never looked again.
+
+    Giving up on an absent device consumed the heartbeat and armed nothing in its
+    place, so the slow backstop that bounds "silently wrong" was gone for good. With
+    no session open there is no reader either, so the keyboard coming back was heard
+    by nobody until the agent was restarted.
+    """
+    keyboard = receiver.devices[fakehid.MX_KEYS_INDEX]
+    keyboard.asleep = True
+    keyboard.platform = 1
+    agent = Agent(
+        config(
+            tmp_path,
+            force_polling=True,
+            event_only=True,
+            event_only_reassert=0.5,
+            retry_initial=0.05,
+            retry_max=0.05,
+        )
+    )
+    agent.start()
+    try:
+        assert wait_for(
+            lambda: trace.HEALTH.snapshot().get("quiet_retries_abandoned", 0) > 0, timeout=30.0
+        ), "the agent never gave up on the absent keyboard"
+        keyboard.asleep = False  # back, and announcing nothing
+        assert wait_for(lambda: keyboard.platform == 0, timeout=5.0), (
+            "the backstop never re-checked after the agent gave up"
+        )
+    finally:
+        agent.stop()
+        agent.shutdown()
+
+
 def test_an_unknown_device_is_heard_when_we_have_none_of_our_own(receiver, tmp_path):
     """With no session, anything talking is worth a look -- that is why we retry."""
     agent = Agent(config(tmp_path, force_polling=True))
@@ -519,6 +554,39 @@ def test_the_agent_reports_itself_alive_even_when_nothing_changes(receiver, tmp_
     assert "steady on " in message
     assert "MX Keys S=" in message
     assert "input=" in message
+
+
+def test_the_steady_summary_says_whether_anything_will_look_again(receiver, tmp_path, caplog):
+    """Eleven hours of "no device" could not tell a sleeping backstop from a dead one."""
+    from logiswitch.agent import _describe_schedule
+
+    assert _describe_schedule(100.0, None, 400.0, None) == "backstop in 300s"
+    assert _describe_schedule(100.0, 102.0, None, None) == "next check in 2s"
+    assert "no re-check scheduled" in _describe_schedule(100.0, None, None, None)
+
+    agent = Agent(config(tmp_path))
+    with caplog.at_level(logging.INFO, logger="logiswitch.agent"):
+        agent._log_steady_summary("backstop in 300s")
+    assert caplog.records[-1].getMessage().endswith("| backstop in 300s")
+
+
+def test_why_no_session_was_built_is_logged_once_per_reason(receiver, tmp_path, caplog):
+    """A receiver present but unusable left nothing at INFO to explain the silence."""
+    receiver.devices[fakehid.MX_KEYS_INDEX].asleep = True
+    agent = Agent(config(tmp_path))
+    with caplog.at_level(logging.INFO, logger="logiswitch.agent"):
+        agent.assert_once()
+        agent.assert_once()
+    lines = [r.getMessage() for r in caplog.records if r.getMessage().startswith("no session:")]
+    assert len(lines) == 1, lines
+    assert "Logi Bolt receiver" in lines[0]
+
+
+def test_os_device_events_reach_the_log(tmp_path, caplog):
+    agent = Agent(config(tmp_path))
+    with caplog.at_level(logging.INFO, logger="logiswitch.agent"):
+        agent._on_device_event(DeviceEvent.ARRIVED, "USB Receiver")
+    assert "interface arrived: USB Receiver" in caplog.records[-1].getMessage()
 
 
 def test_a_write_that_does_not_take_is_not_logged_as_a_switch(receiver, tmp_path, caplog):
