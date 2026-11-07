@@ -157,7 +157,29 @@ if ($Uninstall) {
         $ErrorActionPreference = 'Stop'
     }
     if (-not $FromCheckout -and (Test-Path $InstallDir)) {
-        Remove-Item -Recurse -Force $InstallDir
+        # Deleting the task does not wait for the agent it started: that pythonw.exe
+        # keeps the venv's compiled hid module open, and Windows refuses to delete a
+        # loaded DLL. Stop whatever still runs from the install folder first.
+        $prefix = (Resolve-Path $InstallDir).Path.TrimEnd('\') + '\'
+        $running = @(Get-Process -ErrorAction SilentlyContinue | Where-Object {
+            $_.Path -and $_.Path.StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase)
+        })
+        foreach ($process in $running) {
+            Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+            $process.WaitForExit(10000) | Out-Null
+        }
+        # The handles close a moment after the process exits; give it a few tries.
+        for ($attempt = 1; ; $attempt++) {
+            try {
+                Remove-Item -Recurse -Force $InstallDir -ErrorAction Stop
+                break
+            } catch {
+                if ($attempt -ge 10) {
+                    throw "could not remove ${InstallDir}: $($_.Exception.Message). Sign out and back in, then delete it."
+                }
+                Start-Sleep -Milliseconds 500
+            }
+        }
         Write-Ok "removed $InstallDir"
     }
     Write-Ok 'Done.'

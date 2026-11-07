@@ -1,6 +1,12 @@
 # Changelog
 
-## Unreleased
+## 2.8.0 — 2026-11-07
+
+The Windows installer failed on Windows 10 ([#9](https://github.com/abd3lraouf-studios/logitech-layout-auto-switcher/issues/9)),
+and the report arrived with "Log output: N/A" -- because for an agent running
+unattended, a good share of its failures never reached the log at all. This release
+fixes the installer, runs it in CI under both PowerShell 5.1 and 7, and makes every
+way the agent can fail leave a trace a bug report can carry.
 
 ### Fixed
 
@@ -16,6 +22,10 @@
   finds every installed Python and uses the newest one from 3.9 to 3.14, falling back
   to a newer one only with a warning, and rebuilds a virtualenv left on such a Python
   by an earlier failed run.
+- **Uninstalling with the one-liner removes the install folder.** Deleting the
+  scheduled task did not wait for the agent it had started, whose `pythonw.exe` kept
+  the compiled hid module loaded, so `Remove-Item` failed with "access denied". The
+  uninstaller now stops whatever still runs from the install folder before removing it.
 
 - **A crash anywhere in the agent now reaches its log.** Under the Windows logon task
   (`pythonw.exe`, no stderr) and launchd (stderr to a separate file), several failures
