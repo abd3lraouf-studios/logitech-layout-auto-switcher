@@ -49,7 +49,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [windows-latest, macos-latest]
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
         include:
           # macos-latest runners are arm64 and have no 3.9 build; Windows still
           # supports the version the project claims, so keep it covered there.
