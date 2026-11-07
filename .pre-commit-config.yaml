@@ -5,13 +5,15 @@ default_language_version:
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: check-added-large-files
       - id: check-merge-conflict
       - id: check-toml
       - id: check-yaml
       - id: end-of-file-fixer
+        # The press kit SVGs in art/ are shipped as exported; do not rewrite them.
+        exclude: ^art/.*\.svg$
       - id: trailing-whitespace
       - id: mixed-line-ending
         args: [--fix=lf]
@@ -20,14 +22,14 @@ repos:
       - id: debug-statements
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.4
+    rev: v0.17.4
     hooks:
-      - id: ruff
+      - id: ruff-check
         args: [--fix]
       - id: ruff-format
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.14.0
+    rev: v2.4.1
     hooks:
       - id: mypy
         files: ^logiswitch/
