@@ -11,6 +11,12 @@
   either picked no Python at all or could not create the virtualenv. A candidate Python
   that writes to stderr is now skipped instead of aborting the script.
 
+### Changed
+
+- **Package metadata uses an SPDX license expression** (`license = "MIT"`), which needs
+  setuptools 77 to build. Installing no longer prints setuptools' license deprecation
+  warnings, and builds keep working past setuptools' 2027-02-18 cutoff.
+
 ## 2.7.1 — 2026-09-15
 
 A keyboard went unswitched for eleven hours after its receiver's dock was unplugged and
