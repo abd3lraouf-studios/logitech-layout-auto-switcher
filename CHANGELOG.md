@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- **The Windows installer works under Windows PowerShell 5.1** (the Windows 10 default;
+  [#9](https://github.com/abd3lraouf-studios/logitech-layout-auto-switcher/issues/9)).
+  The `py -3` prefix was unrolled to a string and concatenated onto the arguments, and
+  the Python version probe's double quotes reached Python unescaped, so the installer
+  either picked no Python at all or could not create the virtualenv. A candidate Python
+  that writes to stderr is now skipped instead of aborting the script.
+
 ## 2.7.1 — 2026-09-15
 
 A keyboard went unswitched for eleven hours after its receiver's dock was unplugged and

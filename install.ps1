@@ -72,8 +72,20 @@ function Resolve-BasePython {
         if (-not $command) { continue }
         # Skip the Microsoft Store stub, which exits without running anything.
         if ($command.Source -like '*WindowsApps*') { continue }
-        $prefix = if ($candidate -eq 'py') { @('-3') } else { @() }
-        $version = & $command.Source @($prefix + @('-c', 'import sys; print("%d.%d" % sys.version_info[:2])')) 2>$null
+        # Build the prefix as a real array: `$x = if (...) { @('-3') }` unrolls to
+        # the string '-3', and '-3' + @(...) then concatenates instead of appending.
+        [string[]]$prefix = @()
+        if ($candidate -eq 'py') { $prefix = @('-3') }
+        # No double quotes in the probe: Windows PowerShell 5.1 passes embedded "
+        # to native commands unescaped, which corrupts the -c argument.
+        $probe = 'import sys; v = sys.version_info; print(v[0], v[1], sep=chr(46))'
+        $probeArgs = $prefix + @('-c', $probe)
+        # A candidate that writes to stderr must be skipped, not abort the script:
+        # under 'Stop', Windows PowerShell 5.1 turns redirected native stderr into
+        # a terminating error. The assignment is local to this function.
+        $ErrorActionPreference = 'Continue'
+        $version = & $command.Source @probeArgs 2>$null
+        $ErrorActionPreference = 'Stop'
         if ($LASTEXITCODE -eq 0 -and $version -match '^(\d+)\.(\d+)$') {
             if ([int]$Matches[1] -ge 3 -and [int]$Matches[2] -ge 9) {
                 return @{ Path = $command.Source; Prefix = $prefix; Version = $version }
@@ -140,7 +152,8 @@ if (-not $FromCheckout) {
 # --- install ------------------------------------------------------------------
 if (-not (Test-Path $Python)) {
     Write-Step 'Creating the virtualenv'
-    & $base.Path @($base.Prefix + @('-m', 'venv', $Venv))
+    [string[]]$venvArgs = @($base.Prefix) + @('-m', 'venv', $Venv)
+    & $base.Path @venvArgs
     if ($LASTEXITCODE -ne 0) { throw 'failed to create the virtualenv' }
 }
 
