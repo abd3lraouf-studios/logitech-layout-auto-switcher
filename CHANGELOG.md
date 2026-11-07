@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.8.1 — 2026-11-07
+
+### Fixed
+
+- **A keyboard returning to an idle receiver is switched at once, not minutes later.**
+  When the agent started (or restarted, as `logiswitch update` does) while the
+  keyboard was on another Easy-Switch channel, the receiver had nothing on it to
+  drive, so the agent closed it. With nothing reading the receiver, the keyboard's
+  first frames back went unheard and the switch waited for the slow backstop (five
+  minutes in event-only mode). Such receivers now stay open as listeners. Chatter
+  from devices on them that cannot switch, such as a mouse, is still ignored.
+
 ## 2.8.0 — 2026-11-07
 
 The Windows installer failed on Windows 10 ([#9](https://github.com/abd3lraouf-studios/logitech-layout-auto-switcher/issues/9)),

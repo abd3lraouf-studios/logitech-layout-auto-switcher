@@ -268,6 +268,14 @@ class Agent(_ArbitrationMixin, _SessionMixin):
         self._worker: threading.Thread | None = None
         self._watcher: Watcher | None = None
         self._sessions: list[Session] = []
+        #: Receivers kept open with nothing on them to drive, only so their readers
+        #: hear a keyboard come back. Closing them left nothing listening: a start
+        #: while the keyboard was on another Easy-Switch channel only noticed its
+        #: return when the slow backstop next fired, minutes later.
+        self._listeners: list[Session] = []
+        #: Devices those receivers reported that cannot switch platform (a mouse,
+        #: say). Their chatter is ignored, or every movement would trigger a rescan.
+        self._not_ours: frozenset[int] = frozenset()
         #: Device indices we drive. Read from reader threads, rebound (never
         #: mutated) from the worker, so no lock is needed.
         self._driven: frozenset[int] = frozenset()
@@ -476,6 +484,8 @@ class Agent(_ArbitrationMixin, _SessionMixin):
             # A setHostPlatform reply nobody here was waiting for: somebody else
             # asked. Our own would have been claimed by its sink before reaching us.
             self._note_foreign_write(frame)
+            return
+        if not self._driven and index in self._not_ours:
             return
         if p.is_unsolicited(frame) and (not self._driven or index in self._driven):
             # A Bolt receiver stays enumerated across an Easy-Switch move and

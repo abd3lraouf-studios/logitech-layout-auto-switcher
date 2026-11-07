@@ -29,6 +29,8 @@ class _SessionMixin:
     if TYPE_CHECKING:
         cfg: AgentConfig
         _sessions: list[Session]
+        _listeners: list[Session]
+        _not_ours: frozenset[int]
         _hints: dict[str, list[int]]
         _last_written: dict[int, int]
         _driven: frozenset[int]
@@ -54,11 +56,15 @@ class _SessionMixin:
             log.info("%s: %s", "skipped" if partial else "no session", problem)
 
     def _build_sessions(self) -> None:
+        # A rebuild reopens every receiver; a listener left open would hold a second
+        # handle on the same one.
+        self._close_listeners()
         groups = hidpp.find_groups(self.cfg.vendor_id)
         if not groups:
             self._note_build("no Logitech HID++ receiver or device is attached")
             return
         problems: list[str] = []
+        idle: list[Session] = []
         for group in groups:
             try:
                 transport = hidpp.open_transport(group)
@@ -80,7 +86,7 @@ class _SessionMixin:
                 # Keep no handle open for it.
                 names = ", ".join(i.name for _, i in session.devices) or "no devices"
                 problems.append(f"{group} has nothing to drive ({names})")
-                transport.close()
+                idle.append(session)
                 continue
             self._hints[group.label] = [d.index for d, _ in session.supported]
             for device, info in session.supported:
@@ -94,6 +100,24 @@ class _SessionMixin:
                     info.kind,
                 )
             self._sessions.append(session)
+        if self._sessions:
+            for session in idle:
+                session.close()
+        elif idle:
+            # Nothing to drive anywhere: most often the keyboard is on another
+            # Easy-Switch channel. Keep the receivers open so its first frame back
+            # wakes the worker (see _on_hidpp_frame) instead of waiting for a timer.
+            self._listeners = idle
+            # Never ignore an index we have driven before: a keyboard whose probe
+            # merely timed out is listed among the devices that cannot switch.
+            known = {i for s in idle for i in self._hints.get(s.group.label, [])}
+            self._not_ours = frozenset(
+                d.index for s in idle for d, _ in s.devices if d.index not in known
+            )
+            log.debug(
+                "listening on %s for a device to return",
+                ", ".join(s.group.label for s in idle),
+            )
         self._note_build("; ".join(problems) or None, partial=bool(self._sessions))
         self._refresh_driven()
         self._save_hints()
@@ -113,7 +137,16 @@ class _SessionMixin:
                     log.debug("no platform feature index for device %d", device.index)
         self._platform_features = features
 
+    def _close_listeners(self) -> None:
+        for session in self._listeners:
+            try:
+                session.close()
+            except Exception:
+                log.debug("error closing listener", exc_info=True)
+        self._listeners = []
+
     def _teardown_sessions(self, reason: str) -> None:
+        self._close_listeners()
         if not self._sessions:
             return
         # _driven deliberately survives: a frame already in flight when we close

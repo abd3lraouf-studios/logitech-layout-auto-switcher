@@ -716,3 +716,71 @@ def test_a_broken_notifier_does_not_break_the_agent(receiver, tmp_path):
     assert agent.assert_once(), "the pass must still succeed"
     assert agent.notifier._drain() == 0
     assert keyboard.platform == 0, "and the keyboard must still have been corrected"
+
+
+def _idle_agent(receiver, tmp_path):
+    """An agent started while the keyboard was on another channel.
+
+    The backstop is a minute away, so anything that switches the keyboard sooner
+    than that was heard, not polled.
+    """
+    keyboard = receiver.devices[fakehid.MX_KEYS_INDEX]
+    keyboard.asleep = True
+    keyboard.platform = 1
+    agent = Agent(
+        config(
+            tmp_path,
+            force_polling=True,
+            event_only=True,
+            event_only_reassert=60.0,
+            retry_initial=0.05,
+            retry_max=0.05,
+        )
+    )
+    return agent, keyboard
+
+
+def _wait_until_it_gives_up():
+    assert wait_for(
+        lambda: trace.HEALTH.snapshot().get("quiet_retries_abandoned", 0) > 0, timeout=30.0
+    ), "the agent never gave up on the absent keyboard"
+
+
+def test_a_keyboard_returning_to_an_idle_receiver_is_heard(receiver, tmp_path):
+    """Started while the keyboard was away, the agent closed the receiver.
+
+    It had nothing to drive, so nothing was left reading it, and the keyboard's
+    first frames back were heard by nobody: the switch waited for the five-minute
+    backstop. The receiver now stays open as a listener.
+    """
+    agent, keyboard = _idle_agent(receiver, tmp_path)
+    agent.start()
+    try:
+        _wait_until_it_gives_up()
+        keyboard.asleep = False
+        # What an MX Keys S says first on its return: an unsolicited lock-key frame.
+        receiver.broadcast(bytes([0x11, fakehid.MX_KEYS_INDEX, 0x09, 0x00] + [0] * 16))
+        assert wait_for(lambda: keyboard.platform == 0, timeout=5.0), (
+            "the returning keyboard was not heard on the idle receiver"
+        )
+        assert not agent._listeners, "the listener should give way to a real session"
+    finally:
+        agent.stop()
+        agent.shutdown()
+
+
+def test_a_device_that_cannot_switch_does_not_wake_an_idle_agent(receiver, tmp_path):
+    """The mouse stays on this host while the keyboard is away; its movement is noise."""
+    agent, _keyboard = _idle_agent(receiver, tmp_path)
+    agent.start()
+    try:
+        _wait_until_it_gives_up()
+        assert agent._listeners, "nothing is left listening on the receiver"
+        assert fakehid.MX_MASTER_INDEX in agent._not_ours
+        while not agent._queue.empty():
+            agent._queue.get_nowait()
+        agent._on_hidpp_frame(bytes([0x11, fakehid.MX_MASTER_INDEX, 0x09, 0x00] + [0] * 16))
+        assert agent._queue.empty()
+    finally:
+        agent.stop()
+        agent.shutdown()
