@@ -10,6 +10,12 @@
   the Python version probe's double quotes reached Python unescaped, so the installer
   either picked no Python at all or could not create the virtualenv. A candidate Python
   that writes to stderr is now skipped instead of aborting the script.
+- **The Windows installer picks a Python that hidapi ships wheels for.** It used to
+  run `py -3`, the newest Python installed; on 3.15, which hidapi has no wheel for
+  yet, pip had to compile it and failed on any machine without a C compiler. It now
+  finds every installed Python and uses the newest one from 3.9 to 3.14, falling back
+  to a newer one only with a warning, and rebuilds a virtualenv left on such a Python
+  by an earlier failed run.
 
 - **A crash anywhere in the agent now reaches its log.** Under the Windows logon task
   (`pythonw.exe`, no stderr) and launchd (stderr to a separate file), several failures

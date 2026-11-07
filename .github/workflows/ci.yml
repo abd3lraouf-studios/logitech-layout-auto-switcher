@@ -125,21 +125,26 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Shell and launcher
+      - name: Shell and interpreters
         run: |
           "PowerShell $($PSVersionTable.PSVersion)"
-          "py: $((Get-Command py -ErrorAction SilentlyContinue).Source)"
+          $ErrorActionPreference = 'Continue'
+          py -0p
+          $global:LASTEXITCODE = 0
 
       - name: Install from the checkout
         run: |
-          $out = .\install.ps1 *>&1 | Tee-Object -Variable log | Out-String
-          $log | Out-Host
+          # Capture only Write-Host (stream 6). Redirecting stderr too would make
+          # Windows PowerShell 5.1 turn pip's first stderr line into a terminating
+          # error, and would hide the real one from this log.
+          .\install.ps1 6>&1 | Tee-Object -FilePath install-output.txt
+          $out = Get-Content -Raw install-output.txt
           if (-not ($out -match 'Installed\.')) { throw 'installer did not finish' }
-          # py is tried first; if it is on PATH and was not picked, its probe failed
-          # silently and a different Python was chosen (the #9 failure mode).
-          if ((Get-Command py -ErrorAction SilentlyContinue) -and -not ($out -match '\\py\.exe \(')) {
-            throw 'py is on PATH but the installer did not select it'
-          }
+          # The venv must sit on a Python hidapi ships wheels for, even when the
+          # runner also has a newer one (py -3 alone would pick that).
+          $minor = [int](.\.venv\Scripts\python.exe -c 'import sys; print(sys.version_info[1])')
+          if ($minor -gt 14) { throw "venv is on Python 3.$minor, which hidapi has no wheel for" }
+          "venv: Python 3.$minor"
 
       - name: The logon task is registered
         run: |

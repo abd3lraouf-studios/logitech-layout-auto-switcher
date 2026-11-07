@@ -66,33 +66,75 @@ if ($ScriptDir -and (Test-Path (Join-Path $ScriptDir 'pyproject.toml'))) {
 }
 $Python = Join-Path $Venv 'Scripts\python.exe'
 
-function Resolve-BasePython {
-    foreach ($candidate in @('py', 'python3', 'python')) {
-        $command = Get-Command $candidate -ErrorAction SilentlyContinue
-        if (-not $command) { continue }
+# hidapi, the one compiled dependency, publishes Windows wheels up to this minor
+# version. On a newer Python pip has to build it from source, which fails on any
+# machine without a C compiler -- so a newer Python is only a last resort.
+$MaxWheelMinor = 14
+
+function Get-PythonCandidates {
+    # Every interpreter we can find, probed directly by path. The py launcher is
+    # only asked for its list: `py -3` runs the *newest* Python installed, which
+    # may be one hidapi has no wheel for.
+    $paths = New-Object System.Collections.Generic.List[string]
+    foreach ($name in @('python', 'python3')) {
+        foreach ($command in @(Get-Command $name -All -ErrorAction SilentlyContinue)) {
+            if ($command.Source) { $paths.Add($command.Source) }
+        }
+    }
+    $py = Get-Command py -ErrorAction SilentlyContinue
+    if ($py) {
+        $ErrorActionPreference = 'Continue'
+        $listing = & $py.Source -0p 2>$null
+        $ErrorActionPreference = 'Stop'
+        foreach ($line in @($listing)) {
+            if ("$line" -match '([A-Za-z]:\\.*?\\python\.exe)') { $paths.Add($Matches[1]) }
+        }
+    }
+    foreach ($root in @("$env:LOCALAPPDATA\Programs\Python", "$env:ProgramFiles")) {
+        if ($root -and (Test-Path $root)) {
+            Get-ChildItem -Path $root -Directory -Filter 'Python3*' -ErrorAction SilentlyContinue |
+                ForEach-Object { $paths.Add((Join-Path $_.FullName 'python.exe')) }
+        }
+    }
+    $seen = @{}
+    foreach ($path in $paths) {
+        if (-not (Test-Path $path)) { continue }
         # Skip the Microsoft Store stub, which exits without running anything.
-        if ($command.Source -like '*WindowsApps*') { continue }
-        # Build the prefix as a real array: `$x = if (...) { @('-3') }` unrolls to
-        # the string '-3', and '-3' + @(...) then concatenates instead of appending.
-        [string[]]$prefix = @()
-        if ($candidate -eq 'py') { $prefix = @('-3') }
+        if ($path -like '*WindowsApps*') { continue }
+        $key = (Resolve-Path $path).Path.ToLowerInvariant()
+        if ($seen.ContainsKey($key)) { continue }
+        $seen[$key] = $true
         # No double quotes in the probe: Windows PowerShell 5.1 passes embedded "
         # to native commands unescaped, which corrupts the -c argument.
         $probe = 'import sys; v = sys.version_info; print(v[0], v[1], sep=chr(46))'
-        $probeArgs = $prefix + @('-c', $probe)
         # A candidate that writes to stderr must be skipped, not abort the script:
         # under 'Stop', Windows PowerShell 5.1 turns redirected native stderr into
         # a terminating error. The assignment is local to this function.
         $ErrorActionPreference = 'Continue'
-        $version = & $command.Source @probeArgs 2>$null
+        $version = & $path -c $probe 2>$null
         $ErrorActionPreference = 'Stop'
-        if ($LASTEXITCODE -eq 0 -and $version -match '^(\d+)\.(\d+)$') {
-            if ([int]$Matches[1] -ge 3 -and [int]$Matches[2] -ge 9) {
-                return @{ Path = $command.Source; Prefix = $prefix; Version = $version }
-            }
+        if ($LASTEXITCODE -eq 0 -and "$version" -match '^3\.(\d+)$' -and [int]$Matches[1] -ge 9) {
+            [pscustomobject]@{ Path = $path; Minor = [int]$Matches[1]; Version = "$version" }
         }
     }
-    throw "Python 3.9 or newer was not found. Install it from https://python.org (tick 'Add to PATH') and re-run."
+}
+
+function Resolve-BasePython {
+    $found = @(Get-PythonCandidates)
+    $best = $found | Where-Object { $_.Minor -le $MaxWheelMinor } |
+        Sort-Object Minor -Descending | Select-Object -First 1
+    if (-not $best) {
+        $best = $found | Sort-Object Minor | Select-Object -First 1
+        if ($best) {
+            Write-Warn2 "Only Python $($best.Version) was found. hidapi has no prebuilt wheel for it yet,"
+            Write-Warn2 "so pip will try to compile it. If that fails, install Python 3.$MaxWheelMinor from"
+            Write-Warn2 'https://python.org and re-run.'
+        }
+    }
+    if (-not $best) {
+        throw "Python 3.9 or newer was not found. Install it from https://python.org (tick 'Add to PATH') and re-run."
+    }
+    return @{ Path = $best.Path; Prefix = @(); Version = $best.Version }
 }
 
 # --- uninstall ----------------------------------------------------------------
@@ -154,6 +196,18 @@ if (-not $FromCheckout) {
 }
 
 # --- install ------------------------------------------------------------------
+if (Test-Path $Python) {
+    # A venv left by an earlier run on a Python hidapi has no wheel for can never
+    # install; rebuild it on the interpreter chosen above.
+    $ErrorActionPreference = 'Continue'
+    $venvVersion = & $Python -c 'import sys; print(sys.version_info[1])' 2>$null
+    $ErrorActionPreference = 'Stop'
+    if ("$venvVersion" -match '^\d+$' -and [int]$venvVersion -gt $MaxWheelMinor -and
+            $base.Version -ne "3.$venvVersion") {
+        Write-Step "Replacing the Python 3.$venvVersion virtualenv"
+        Remove-Item -Recurse -Force $Venv
+    }
+}
 if (-not (Test-Path $Python)) {
     Write-Step 'Creating the virtualenv'
     [string[]]$venvArgs = @($base.Prefix) + @('-m', 'venv', $Venv)
@@ -164,7 +218,7 @@ if (-not (Test-Path $Python)) {
 Write-Step 'Installing logiswitch'
 & $Python -m pip install --quiet --upgrade pip
 & $Python -m pip install --quiet "$Root"
-if ($LASTEXITCODE -ne 0) { throw 'pip install failed' }
+if ($LASTEXITCODE -ne 0) { throw "pip install failed on Python $($base.Version) ($($base.Path)); the error is above" }
 Write-Ok (& $Python -m logiswitch --version)
 
 Write-Step 'Checking the keyboard is reachable'
