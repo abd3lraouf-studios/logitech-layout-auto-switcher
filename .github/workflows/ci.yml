@@ -102,6 +102,84 @@ jobs:
           if-no-files-found: ignore
           retention-days: 5
 
+  installer:
+    # Issue #9: install.ps1 broke under Windows PowerShell 5.1 and nothing ran it.
+    # Exercise both the checkout path and the piped one-liner path, under 5.1
+    # (`powershell`) and 7 (`pwsh`), each followed by its uninstall.
+    name: install.ps1 (${{ matrix.shell }})
+    runs-on: windows-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shell: [powershell, pwsh]
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
+    env:
+      # The one-liner downloads the ref it is given; test the commit under test.
+      LOGISWITCH_REF: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Shell and launcher
+        run: |
+          "PowerShell $($PSVersionTable.PSVersion)"
+          "py: $((Get-Command py -ErrorAction SilentlyContinue).Source)"
+
+      - name: Install from the checkout
+        run: |
+          $out = .\install.ps1 *>&1 | Tee-Object -Variable log | Out-String
+          $log | Out-Host
+          if (-not ($out -match 'Installed\.')) { throw 'installer did not finish' }
+          # py is tried first; if it is on PATH and was not picked, its probe failed
+          # silently and a different Python was chosen (the #9 failure mode).
+          if ((Get-Command py -ErrorAction SilentlyContinue) -and -not ($out -match '\\py\.exe \(')) {
+            throw 'py is on PATH but the installer did not select it'
+          }
+
+      - name: The logon task is registered
+        run: |
+          .\.venv\Scripts\python.exe -m logiswitch service-status
+          schtasks /Query /TN LogiSwitch
+          if ($LASTEXITCODE -ne 0) { throw 'scheduled task missing' }
+
+      - name: Uninstall from the checkout
+        run: |
+          .\install.ps1 -Uninstall
+          # A missing task makes schtasks write to stderr; under 5.1 with 'Stop'
+          # that redirected stderr would itself abort the step.
+          $ErrorActionPreference = 'Continue'
+          schtasks /Query /TN LogiSwitch *> $null
+          if ($LASTEXITCODE -eq 0) { throw 'scheduled task still registered' }
+          $global:LASTEXITCODE = 0
+
+      - name: One-liner install
+        env:
+          LOGISWITCH_HOME: ${{ runner.temp }}\logiswitch-oneliner
+        run: |
+          Get-Content -Raw .\install.ps1 | Invoke-Expression
+          if (-not (Test-Path "$env:LOGISWITCH_HOME\venv\Scripts\python.exe")) { throw 'no venv' }
+          schtasks /Query /TN LogiSwitch
+          if ($LASTEXITCODE -ne 0) { throw 'scheduled task missing' }
+
+      - name: One-liner uninstall
+        env:
+          LOGISWITCH_HOME: ${{ runner.temp }}\logiswitch-oneliner
+          LOGISWITCH_UNINSTALL: "1"
+        run: |
+          Get-Content -Raw .\install.ps1 | Invoke-Expression
+          if (Test-Path $env:LOGISWITCH_HOME) { throw 'install dir left behind' }
+          # A missing task makes schtasks write to stderr; under 5.1 with 'Stop'
+          # that redirected stderr would itself abort the step.
+          $ErrorActionPreference = 'Continue'
+          schtasks /Query /TN LogiSwitch *> $null
+          if ($LASTEXITCODE -eq 0) { throw 'scheduled task still registered' }
+          $global:LASTEXITCODE = 0
+
   coverage:
     name: combined coverage
     needs: test

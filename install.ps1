@@ -101,6 +101,9 @@ if ($Uninstall) {
     if (Test-Path $Python) {
         & $Python -m logiswitch uninstall
     } else {
+        # schtasks reports a missing task on stderr; Windows PowerShell 5.1 would
+        # turn that redirected stderr into a terminating error under 'Stop'.
+        $ErrorActionPreference = 'Continue'
         foreach ($task in @('LogiSwitch', 'MXSwitch')) {
             schtasks /Query /TN $task *> $null
             if ($LASTEXITCODE -eq 0) {
@@ -109,6 +112,7 @@ if ($Uninstall) {
                 Write-Ok "removed scheduled task '$task'"
             }
         }
+        $ErrorActionPreference = 'Stop'
     }
     if (-not $FromCheckout -and (Test-Path $InstallDir)) {
         Remove-Item -Recurse -Force $InstallDir
