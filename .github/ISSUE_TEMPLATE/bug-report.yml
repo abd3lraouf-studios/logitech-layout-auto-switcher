@@ -15,7 +15,14 @@ body:
     id: logs
     attributes:
       label: Log output
-      description: Run `logiswitch watch -v` and paste the last ~50 lines.
+      description: |
+        Paste the last ~100 lines of the agent's log, from around when it went wrong:
+        macOS `~/Library/Logs/logiswitch.log`, Windows `%LOCALAPPDATA%\LogiSwitch\logiswitch.log`.
+        Better still, run `logiswitch bundle` and drag the zip it writes into the
+        "Anything else" box below: it collects the logs, the crash file, the doctor
+        report and the service definition in one go.
+        Please do not start a second agent with `logiswitch watch` while the installed
+        one is running; the two fight over the keyboard.
       render: text
     validations:
       required: true
@@ -45,3 +52,11 @@ body:
     id: kvm
     attributes:
       label: KVM model, if any
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: >-
+        Attach the zip from `logiswitch bundle` here (drag it into this box). It holds
+        your hostname and log lines; look it over first if that matters to you.

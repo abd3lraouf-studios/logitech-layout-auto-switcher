@@ -41,6 +41,9 @@ CHURN_WINDOW = 60.0
 CHURN_THRESHOLD = 6
 #: How often the agent says it is alive and well, even when nothing changes.
 STEADY_SUMMARY_INTERVAL = 600.0
+#: Pause before restarting a worker that raised, so a bug that fires on every pass
+#: logs one traceback every few seconds rather than spinning the CPU.
+WORKER_RESTART_DELAY = 5.0
 
 #: How long to wait before looking again when a modifier is held down.
 #:
@@ -389,7 +392,10 @@ class Agent(_ArbitrationMixin, _SessionMixin):
             log.info("watching for device changes via %s", self._watcher.name)
         except Exception as exc:
             log.warning(
-                "%s watcher failed to start (%s); falling back to polling", self._watcher.name, exc
+                "%s watcher failed to start (%s); falling back to polling",
+                self._watcher.name,
+                exc,
+                exc_info=True,
             )
             from ..platform.watchers.polling import PollingWatcher
 
@@ -589,6 +595,28 @@ class Agent(_ArbitrationMixin, _SessionMixin):
     # -- worker ---------------------------------------------------------------
 
     def _run(self) -> None:
+        """The worker thread: :meth:`_loop`, restarted if it ever raises.
+
+        Only :meth:`_apply` was guarded inside the loop. Anything else that raised
+        killed the thread while the main thread kept waiting, leaving a process that
+        looked healthy, logged nothing more and never switched again. Restarting from
+        the top re-asserts the platform, which is the right first move after an
+        unknown failure anyway.
+        """
+        while not self._stop.is_set():
+            try:
+                self._loop()
+                return
+            except Exception:
+                log.exception(
+                    "agent worker failed unexpectedly; restarting it in %.0fs",
+                    WORKER_RESTART_DELAY,
+                )
+                with contextlib.suppress(Exception):
+                    self._teardown_sessions("worker restart")
+                self._stop.wait(WORKER_RESTART_DELAY)
+
+    def _loop(self) -> None:
         next_assert: float | None = time.monotonic()  # assert once at start-up
         next_heartbeat: float | None = None
         next_idle_peek: float | None = None  # set while watching for the user's return

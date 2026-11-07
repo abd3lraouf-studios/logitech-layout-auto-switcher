@@ -173,10 +173,14 @@ class HidppDevice:
             self._probed = True
             try:
                 self._probe_multiplatform()
-            except (p.UnsupportedFeature, p.HidppError, p.HidppTimeout):
+            except (p.UnsupportedFeature, p.HidppError, p.HidppTimeout) as exc:
+                # Kept apart: "busy, timed out" and "really unsupported" look the same
+                # from the outcome alone.
+                log.debug("device %d: multiplatform probe: %s", self.index, exc)
                 try:
                     self._probe_dualplatform()
-                except (p.UnsupportedFeature, p.HidppError, p.HidppTimeout):
+                except (p.UnsupportedFeature, p.HidppError, p.HidppTimeout) as exc2:
+                    log.debug("device %d: dualplatform probe: %s", self.index, exc2)
                     self._platform_feature = None
                     self._options = ()
         return DeviceInfo(

@@ -324,7 +324,13 @@ class Transport:
                 return
             if not data or not p.is_hidpp_frame(data):
                 continue
-            self._dispatch(data)
+            try:
+                self._dispatch(data)
+            except Exception:
+                # One frame that trips a bug must not end the reader: it would die
+                # with _dead still False, the transport would still report itself
+                # alive, and every request after it would time out unexplained.
+                log.exception("%s could not handle frame %s", self.label, data.hex())
 
     @staticmethod
     def _reply_key(frame: bytes) -> tuple[int, int, int] | None:

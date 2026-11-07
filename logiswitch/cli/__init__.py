@@ -256,9 +256,12 @@ def main(argv: list[str] | None = None) -> int:
     except SystemExit:
         raise
     except Exception as exc:
-        if args.verbose:
-            log.exception("unhandled error")
-        else:
+        # The agent's log file is often the only thing a user can send; without -v
+        # this used to print to a stderr that pythonw.exe does not have, and the log
+        # just stopped -- after a misleading "agent stopped" line.
+        if args.verbose or file_log is not None:
+            log.exception("unhandled error, exiting")
+        if not args.verbose:
             print(f"error: {exc}", file=sys.stderr)
         return 1
 

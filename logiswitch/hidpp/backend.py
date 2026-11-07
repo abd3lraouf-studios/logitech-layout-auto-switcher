@@ -57,10 +57,33 @@ try:  # pragma: no cover - trivial import shim
 except ImportError as exc:  # pragma: no cover
     _hid = None
     _IMPORT_ERROR: Exception | None = exc
+    NON_EXCLUSIVE = False
 else:
     _IMPORT_ERROR = None
     # Applied once at import, before any open. See configure_non_exclusive_open above.
-    configure_non_exclusive_open(_hid)
+    # This runs before logging is configured, so the outcome is kept for describe()
+    # (and the agent's start-up warning) rather than logged here.
+    NON_EXCLUSIVE = configure_non_exclusive_open(_hid)
+
+
+def describe() -> str:
+    """Which `hid` wrapper loaded, and its version: two incompatible ones share the name."""
+    if _hid is None:
+        return f"unavailable ({_IMPORT_ERROR})"
+    from importlib import metadata
+
+    for dist in ("hidapi", "hid"):
+        try:
+            version = metadata.version(dist)
+        except metadata.PackageNotFoundError:
+            continue
+        break
+    else:
+        dist, version = "hid", "unknown"
+    detail = f"{dist} {version}"
+    if sys.platform == "darwin":
+        detail += ", non-exclusive open" if NON_EXCLUSIVE else ", EXCLUSIVE open"
+    return detail
 
 
 class HidUnavailable(RuntimeError):

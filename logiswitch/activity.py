@@ -29,6 +29,7 @@ import logging
 from .platform import is_macos, is_windows
 
 log = logging.getLogger(__name__)
+_warned = False
 
 #: ``kCGEventSourceStateHIDSystemState`` -- the hardware event stream, which is what
 #: "has anyone touched this machine" means. The combined session state would also
@@ -105,7 +106,13 @@ def seconds_since_input() -> float | None:
         if is_windows():
             return _windows_idle()
     except Exception as exc:  # pragma: no cover - platform specific
-        log.debug("could not read input activity: %s", exc)
+        # Once loudly, with the cause; afterwards quietly, since it recurs every pass.
+        global _warned
+        if not _warned:
+            _warned = True
+            log.warning("could not read input activity: %s", exc, exc_info=True)
+        else:
+            log.debug("could not read input activity: %s", exc)
     return None
 
 

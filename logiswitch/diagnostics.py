@@ -274,7 +274,8 @@ def competing_software(runner: Callable[[list[str]], str] | None = None) -> list
         else:
             output = run(["ps", "-Ac", "-o", "comm="])
     except Exception as exc:
-        log.debug("could not list processes: %s", exc)
+        # An empty answer reads as "no Logi Options+", which decides event-only mode.
+        log.warning("could not list processes, competing software unknown: %s", exc)
         return []
     return _collapse_helpers(sorted({n for n in _process_names(output) if _is_competitor(n)}))
 

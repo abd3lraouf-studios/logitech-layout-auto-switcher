@@ -11,8 +11,33 @@
   either picked no Python at all or could not create the virtualenv. A candidate Python
   that writes to stderr is now skipped instead of aborting the script.
 
+- **A crash anywhere in the agent now reaches its log.** Under the Windows logon task
+  (`pythonw.exe`, no stderr) and launchd (stderr to a separate file), several failures
+  left the log silent while the process looked healthy:
+  - an exception in any background thread is logged with its traceback;
+  - the worker loop restarts after an unexpected error instead of dying, and a frame
+    that trips a bug no longer stops a HID reader (which then reported itself alive
+    while every request timed out);
+  - a fatal error is written to the log file even without `-v`;
+  - a native crash writes every thread's stack to `logiswitch.crash.log` beside the
+    log, which `logiswitch bundle` now includes.
+- **The polling watcher keeps its last good device list when enumeration fails**,
+  instead of reporting every device removed and re-arrived.
+
 ### Changed
 
+- **The log says what was running.** Start-up records the logiswitch, OS, Python and
+  hidapi versions, the interpreter path and the effective options; each line now
+  carries its thread name; `warnings` are captured into the log; signals are logged
+  by name.
+- **Failures that were silent or DEBUG-only are logged** with their cause: a second
+  receiver that cannot be opened while another works, unreadable reconnect hints, a
+  failed process listing (which decides event-only mode), unreadable modifier or
+  idle state (once, with the traceback), a device probe that raised, and a native
+  watcher that failed to start. On macOS, a hidapi build that cannot open devices
+  non-exclusively is warned about, since it breaks keys Logi Options+ has diverted.
+- **The bug report form asks for `logiswitch bundle`** and the log's location instead
+  of starting a second agent with `logiswitch watch -v`.
 - **Package metadata uses an SPDX license expression** (`license = "MIT"`), which needs
   setuptools 77 to build. Installing no longer prints setuptools' license deprecation
   warnings, and builds keep working past setuptools' 2027-02-18 cutoff.

@@ -30,6 +30,7 @@ from pathlib import Path
 from . import __version__, diagnostics, doctor, service
 from .platform import (
     APP_NAME,
+    crash_path,
     data_dir,
     doctor_report_path,
     is_macos,
@@ -104,6 +105,7 @@ def _collect() -> tuple[list[tuple[str, Path]], list[str]]:
             candidate = base.with_name(base.name + suffix)
             wanted.append((f"{folder}/{candidate.name}", candidate))
     wanted.append(("logs/launchd-stdio.log", launchd_stdio_path()))
+    wanted.append(("logs/crash.log", crash_path()))
     wanted.append(("state.json", state_path()))
     wanted.append(("doctor-previous.txt", doctor_report_path()))
 

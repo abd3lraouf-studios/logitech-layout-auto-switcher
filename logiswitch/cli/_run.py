@@ -5,13 +5,17 @@ from __future__ import annotations
 import argparse
 import contextlib
 import logging
+import platform
 import signal
 import sys
+from datetime import datetime
 
-from .. import notify
+from .. import __version__, notify
 from ..agent import Agent, AgentConfig
+from ..hidpp import backend
 from ..hidpp import protocol as p
-from ..platform import default_target_os
+from ..platform import crash_path, default_target_os
+from ..platform.paths import install_crash_logging
 
 log = logging.getLogger("logiswitch")
 
@@ -38,8 +42,39 @@ def cmd_watch(args: argparse.Namespace) -> int:
     if args.once:
         return 0 if agent.assert_once() else 1
 
+    # The first thing a bug report's log should answer: what exactly was running.
+    environment = (
+        f"logiswitch {__version__} on {platform.platform()}, "
+        f"python {platform.python_version()} ({sys.executable}), hid {backend.describe()}"
+    )
+    log.info("%s", environment)
+    log.info(
+        "options: verbose=%s debounce=%.1fs active-window=%.0fs event-only-reassert=%s "
+        "polling=%s notify=%s",
+        bool(args.verbose or args.trace),
+        config.debounce,
+        config.active_window,
+        f"{config.event_only_reassert:.0f}s" if config.event_only_reassert else "off",
+        bool(args.polling),
+        bool(args.notify),
+    )
+    if sys.platform == "darwin" and not backend.NON_EXCLUSIVE:
+        log.warning(
+            "could not make HID opens non-exclusive with this hidapi build; while the "
+            "agent runs, keys Logi Options+ has diverted (e.g. the calculator key) may "
+            "do nothing"
+        )
+    install_crash_logging(
+        crash_path(),
+        banner=f"=== {datetime.now().isoformat(timespec='seconds')} {environment}",
+    )
+
     def handle_signal(signum, _frame):
-        log.info("received signal %s, shutting down", signum)
+        try:
+            name = signal.Signals(signum).name
+        except ValueError:
+            name = str(signum)
+        log.info("received %s, shutting down", name)
         agent.stop()
 
     for name in ("SIGINT", "SIGTERM", "SIGBREAK"):

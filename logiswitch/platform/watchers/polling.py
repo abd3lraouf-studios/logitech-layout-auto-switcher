@@ -28,6 +28,7 @@ class PollingWatcher:
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
         self._present: set[tuple] = set()
+        self._last_error: str | None = None
 
     def start(self, callback: WatcherCallback) -> None:
         self._callback = callback
@@ -46,10 +47,16 @@ class PollingWatcher:
 
     def _snapshot(self) -> set[tuple]:
         try:
-            return {group.key for group in discovery.find_groups(self._vendor_id)}
+            current = {group.key for group in discovery.find_groups(self._vendor_id)}
         except Exception as exc:
-            log.debug("enumeration failed: %s", exc)
-            return set()
+            # Keep the last good picture: returning an empty set here reported every
+            # device as removed and then re-arrived, a reconnect that never happened.
+            if str(exc) != self._last_error:
+                self._last_error = str(exc)
+                log.warning("device enumeration failed: %s", exc, exc_info=True)
+            return self._present
+        self._last_error = None
+        return current
 
     def _run(self) -> None:
         while not self._stop.wait(self._interval):

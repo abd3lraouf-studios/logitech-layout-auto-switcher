@@ -37,7 +37,7 @@ class _SessionMixin:
 
         def _on_hidpp_frame(self, frame: bytes) -> None: ...
 
-    def _note_build(self, problem: str | None) -> None:
+    def _note_build(self, problem: str | None, partial: bool = False) -> None:
         """Log why a session could not be built, once per distinct reason.
 
         At DEBUG these were invisible in every installed log, so "the receiver is
@@ -49,7 +49,9 @@ class _SessionMixin:
             return
         self._last_build_problem = problem
         if problem is not None:
-            log.info("no session: %s", problem)
+            # partial: something else did open, so this is not "no session" -- but a
+            # second receiver that cannot be opened still belongs in the log.
+            log.info("%s: %s", "skipped" if partial else "no session", problem)
 
     def _build_sessions(self) -> None:
         groups = hidpp.find_groups(self.cfg.vendor_id)
@@ -70,6 +72,7 @@ class _SessionMixin:
                 session.devices = hidpp.probe_devices(devices)
             except Exception as exc:
                 problems.append(f"discovery failed on {group}: {exc}")
+                log.debug("discovery failed on %s", group, exc_info=True)
                 transport.close()
                 continue
             if not session.supported:
@@ -91,7 +94,7 @@ class _SessionMixin:
                     info.kind,
                 )
             self._sessions.append(session)
-        self._note_build(None if self._sessions else "; ".join(problems))
+        self._note_build("; ".join(problems) or None, partial=bool(self._sessions))
         self._refresh_driven()
         self._save_hints()
 
@@ -142,7 +145,9 @@ class _SessionMixin:
                 indices = [value] if isinstance(value, int) else list(value)
                 hints[str(label)] = [int(i) for i in indices]
             return hints
-        except Exception:
+        except Exception as exc:
+            # Not fatal -- every reconnect just pays for a full scan -- but say why.
+            log.info("ignoring unreadable reconnect hints in %s: %s", path, exc)
             return {}
 
     def _save_hints(self) -> None:

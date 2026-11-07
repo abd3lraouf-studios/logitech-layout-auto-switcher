@@ -8,7 +8,9 @@ import logging.handlers
 import os
 import platform
 import sys
+import threading
 from pathlib import Path
+from typing import IO
 
 APP_NAME = "logiswitch"
 SERVICE_LABEL = "com.abd3lraouf.logiswitch"
@@ -63,6 +65,15 @@ def trace_path() -> Path:
     return log_path().with_name(f"{APP_NAME}.trace.log")
 
 
+def crash_path() -> Path:
+    """Where a native fault (a crash inside hidapi or a ctypes call) leaves its stacks.
+
+    A segfault kills the process before any logging handler can run, so
+    :mod:`faulthandler` writes straight to this file instead.
+    """
+    return log_path().with_name(f"{APP_NAME}.crash.log")
+
+
 def doctor_report_path() -> Path:
     """Where ``logiswitch doctor`` leaves its report, ready to attach to a bug."""
     return log_path().with_name(f"{APP_NAME}-doctor.txt")
@@ -115,11 +126,16 @@ def setup_logging(
     root.propagate = False
     # Milliseconds matter: the races this log exists to diagnose happen inside one
     # second, and without them a log line cannot be ordered against a frame trace.
+    # The thread name matters for the same reason: the worker, every HID reader and
+    # the OS watcher log concurrently, and each thread is named for what it does.
     formatter = logging.Formatter(
-        "%(asctime)s.%(msecs)03d %(levelname)-7s %(message)s", "%Y-%m-%d %H:%M:%S"
+        "%(asctime)s.%(msecs)03d %(levelname)-7s [%(threadName)s] %(message)s",
+        "%Y-%m-%d %H:%M:%S",
     )
 
-    if console:
+    # Under pythonw.exe (the Windows logon task) there is no stderr at all; a
+    # StreamHandler on None fails, and swallows, every record it is handed.
+    if console and sys.stderr is not None:
         handler = logging.StreamHandler(sys.stderr)
         handler.setFormatter(formatter)
         root.addHandler(handler)
@@ -137,3 +153,60 @@ def setup_logging(
 
     if not root.handlers:
         root.addHandler(logging.NullHandler())
+
+
+#: Kept open for the life of the process: faulthandler writes to the descriptor
+#: from inside a signal handler, long after any ``with`` block would have closed it.
+_fault_file: IO[str] | None = None
+#: Crash file beyond this is cut back at start-up, so a crash loop cannot fill a disk.
+CRASH_FILE_LIMIT = 256 * 1024
+
+
+def install_crash_logging(fault_file: Path | None = None, banner: str = "") -> None:
+    """Make every way the long-running agent can die leave a trace in its files.
+
+    - An exception escaping any thread is logged with its traceback. The default
+      hook prints to stderr, which is nothing at all under pythonw.exe and a
+      separate file under launchd, so a dead reader or worker left the log silent
+      while the process looked healthy.
+    - :mod:`warnings` are routed into the log instead of that same stderr.
+    - With ``fault_file``, a native crash writes every thread's Python stack there
+      (see :func:`crash_path`); ``banner`` is written first to date the session.
+    """
+    global _fault_file
+    root = logging.getLogger(APP_NAME)
+
+    def log_thread_exception(args: threading.ExceptHookArgs) -> None:
+        if args.exc_type is SystemExit:
+            return
+        name = args.thread.name if args.thread is not None else "?"
+        root.critical(
+            "uncaught exception in thread %s; that thread has stopped",
+            name,
+            exc_info=(args.exc_type, args.exc_value, args.exc_traceback),  # type: ignore[arg-type]
+        )
+
+    threading.excepthook = log_thread_exception
+
+    logging.captureWarnings(True)
+    warnings_log = logging.getLogger("py.warnings")
+    warnings_log.handlers[:] = root.handlers
+    warnings_log.propagate = False
+
+    if fault_file is None:
+        return
+    import faulthandler
+
+    try:
+        fault_file.parent.mkdir(parents=True, exist_ok=True)
+        if fault_file.exists() and fault_file.stat().st_size > CRASH_FILE_LIMIT:
+            fault_file.unlink()
+        if _fault_file is not None:
+            _fault_file.close()
+        _fault_file = open(fault_file, "a", encoding="utf-8")  # noqa: SIM115 - see _fault_file
+        if banner:
+            _fault_file.write(banner + "\n")
+            _fault_file.flush()
+        faulthandler.enable(file=_fault_file, all_threads=True)
+    except OSError as exc:  # pragma: no cover - read-only home, etc.
+        root.warning("cannot write %s, native crashes will leave no trace: %s", fault_file, exc)

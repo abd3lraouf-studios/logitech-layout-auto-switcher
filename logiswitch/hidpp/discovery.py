@@ -155,7 +155,7 @@ def probe_devices(devices: list[HidppDevice]) -> list[tuple[HidppDevice, DeviceI
             log.debug("probe aborted for device %d: %s", device.index, exc)
             break
         except Exception as exc:  # a broken device must not sink the rest
-            log.debug("probe failed for device %d: %s", device.index, exc)
+            log.warning("probe failed for device %d: %s", device.index, exc, exc_info=True)
             continue
         results.append((device, info))
     return results

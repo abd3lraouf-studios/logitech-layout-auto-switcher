@@ -99,6 +99,7 @@ error.
 launchctl print gui/$(id -u)/com.abd3lraouf.logiswitch
 tail -40 ~/Library/Logs/logiswitch.log
 tail -40 ~/Library/Logs/logiswitch.launchd.log   # crashes before logging starts
+tail -40 ~/Library/Logs/logiswitch.crash.log     # native crashes (stacks of every thread)
 ```
 
 A non-zero exit with no log usually means the venv's Python moved. Re-run

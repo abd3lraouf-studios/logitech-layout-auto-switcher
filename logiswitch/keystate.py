@@ -29,6 +29,7 @@ import logging
 from .platform import is_macos, is_windows
 
 log = logging.getLogger(__name__)
+_warned = False
 
 #: ``CGEventSourceStateCombinedSessionState`` -- what the session as a whole thinks
 #: is held, which is what actually decides the character a key produces.
@@ -110,7 +111,13 @@ def modifiers_held() -> set[str]:
         if is_windows():
             return _windows_modifiers()
     except Exception as exc:  # pragma: no cover - platform specific
-        log.debug("could not read modifier state: %s", exc)
+        # Once loudly, with the cause; afterwards quietly, since it recurs every pass.
+        global _warned
+        if not _warned:
+            _warned = True
+            log.warning("could not read modifier state: %s", exc, exc_info=True)
+        else:
+            log.debug("could not read modifier state: %s", exc)
     return set()
 
 
